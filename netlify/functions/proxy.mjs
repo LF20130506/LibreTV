@@ -2,6 +2,8 @@
 
 import fetch from 'node-fetch';
 import { URL } from 'url'; // Use Node.js built-in URL
+import { validateUrlWithDns } from '../../lib/security.mjs';
+import { isSameOriginRequest } from '../../lib/security-edge.mjs';
 
 // --- Configuration (Read from Environment Variables) ---
 const DEBUG_ENABLED = process.env.DEBUG === 'true';
@@ -205,6 +207,33 @@ export const handler = async (event, context) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             body: JSON.stringify({ success: false, error: "Invalid proxy request path. Could not extract target URL." }),
         };
+    }
+
+    // --- SSRF 校验：DNS 解析后逐个 IP 判定内网/保留段 ---
+    {
+        const extraBlocked = (process.env.BLOCKED_HOSTS || '').split(',').map(s => s.trim()).filter(Boolean);
+        const verdict = await validateUrlWithDns(targetUrl, { extraBlockedHosts: extraBlocked });
+        if (!verdict.ok) {
+            return {
+                statusCode: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ success: false, error: `Invalid target URL (${verdict.reason})` }),
+            };
+        }
+        if (process.env.PROXY_REFERER_CHECK === 'true') {
+            const same = isSameOriginRequest({
+                referer: event.headers['referer'] || event.headers['Referer'] || null,
+                origin: event.headers['origin'] || event.headers['Origin'] || null,
+                selfHost: event.headers['host'] || event.headers['Host'],
+            });
+            if (!same) {
+                return {
+                    statusCode: 403,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ success: false, error: 'Forbidden: same-origin only' }),
+                };
+            }
+        }
     }
 
     logDebug(`Processing proxy request for target: ${targetUrl}`);

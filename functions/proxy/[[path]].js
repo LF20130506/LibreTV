@@ -1,5 +1,7 @@
 // functions/proxy/[[path]].js
 
+import { validateUrlSyntax, isSameOriginRequest } from '../../lib/security-edge.mjs';
+
 // --- 配置 (现在从 Cloudflare 环境变量读取) ---
 // 在 Cloudflare Pages 设置 -> 函数 -> 环境变量绑定 中设置以下变量:
 // CACHE_TTL (例如 86400)
@@ -421,6 +423,27 @@ export async function onRequest(context) {
         if (!targetUrl) {
             logDebug(`无效的代理请求路径: ${url.pathname}`);
             return createResponse("无效的代理请求。路径应为 /proxy/<经过编码的URL>", 400);
+        }
+
+        // --- SSRF 校验：拦截内网/保留 IP 字面量与非 http(s) 协议 ---
+        const extraBlocked = (env.BLOCKED_HOSTS || '').split(',').map(s => s.trim()).filter(Boolean);
+        const verdict = validateUrlSyntax(targetUrl, { extraBlockedHosts: extraBlocked });
+        if (!verdict.ok) {
+            logDebug(`SSRF 拦截: ${targetUrl} (${verdict.reason})`);
+            return createResponse(`无效的目标 URL (${verdict.reason})`, 400);
+        }
+
+        // --- 可选：同源防滥用（PROXY_REFERER_CHECK=true 时开启），阻断外部把本站当开放代理 ---
+        if (env.PROXY_REFERER_CHECK === 'true') {
+            const same = isSameOriginRequest({
+                referer: request.headers.get('Referer'),
+                origin: request.headers.get('Origin'),
+                selfHost: url.host,
+            });
+            if (!same) {
+                logDebug(`非同源代理请求被拒绝: ${targetUrl}`);
+                return createResponse('禁止：仅允许本站发起代理请求', 403);
+            }
         }
 
         logDebug(`收到代理请求: ${targetUrl}`);

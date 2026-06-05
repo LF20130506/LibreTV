@@ -2,6 +2,8 @@
 
 import fetch from 'node-fetch';
 import { URL } from 'url'; // 使用 Node.js 内置 URL 处理
+import { validateUrlWithDns } from '../../lib/security.mjs';
+import { isSameOriginRequest } from '../../lib/security-edge.mjs';
 
 // --- 配置 (从环境变量读取) ---
 const DEBUG_ENABLED = process.env.DEBUG === 'true';
@@ -362,6 +364,27 @@ export default async function handler(req, res) {
         if (!targetUrl) {
             // 抛出包含更多上下文的错误
             throw new Error(`无效的代理请求路径。无法从组合路径 "${encodedUrlPath}" 中提取有效的目标 URL。`);
+        }
+
+        // --- SSRF 校验：DNS 解析后逐个 IP 判定内网/保留段 ---
+        const extraBlocked = (process.env.BLOCKED_HOSTS || '').split(',').map(s => s.trim()).filter(Boolean);
+        const verdict = await validateUrlWithDns(targetUrl, { extraBlockedHosts: extraBlocked });
+        if (!verdict.ok) {
+            res.status(400).send(`无效的目标 URL (${verdict.reason})`);
+            return;
+        }
+
+        // --- 可选：同源防滥用（PROXY_REFERER_CHECK=true）---
+        if (process.env.PROXY_REFERER_CHECK === 'true') {
+            const same = isSameOriginRequest({
+                referer: req.headers['referer'] || null,
+                origin: req.headers['origin'] || null,
+                selfHost: req.headers['host'],
+            });
+            if (!same) {
+                res.status(403).send('禁止：仅允许本站发起代理请求');
+                return;
+            }
         }
 
         console.info(`开始处理目标 URL 的代理请求: ${targetUrl}`);

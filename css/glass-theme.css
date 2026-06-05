@@ -1,0 +1,317 @@
+/*
+ * LibreTV 液态玻璃主题 (Liquid Glass / Glassmorphism)
+ * ---------------------------------------------------------------
+ * 纯静态覆盖层，无需任何构建步骤，可直接部署到 Cloudflare Pages。
+ * 在 styles.css / index.css / player.css 之后引入即可生效。
+ * 设计要点：半透明背景 + backdrop-filter 毛玻璃 + 大圆角 + 高光描边。
+ */
+
+:root {
+    /* —— 液态玻璃变量 —— */
+    --glass-bg: rgba(18, 27, 41, 0.55);          /* 玻璃主体（深蓝黑半透明）*/
+    --glass-bg-strong: rgba(15, 22, 34, 0.72);   /* 更实的玻璃（弹窗/面板）*/
+    --glass-bg-soft: rgba(255, 255, 255, 0.04);  /* 极淡玻璃（内嵌块）*/
+    --glass-border: rgba(255, 255, 255, 0.12);   /* 玻璃描边 */
+    --glass-border-strong: rgba(0, 204, 255, 0.35);
+    --glass-highlight: rgba(255, 255, 255, 0.18); /* 顶部高光 */
+    --glass-blur: 18px;
+    --glass-blur-strong: 28px;
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 var(--glass-highlight);
+
+    /* —— 统一圆角令牌 —— */
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --radius-xl: 28px;
+    --radius-pill: 9999px;
+}
+
+/* 背景增强：更柔和的辉光，衬托玻璃通透感 */
+.page-bg {
+    background-attachment: fixed;
+}
+.page-bg::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;   /* 置于所有常规内容之后，不干扰面板/弹窗的 z-index 层级 */
+    background:
+        radial-gradient(60vw 60vw at 12% -10%, rgba(0, 204, 255, 0.10), transparent 60%),
+        radial-gradient(55vw 55vw at 100% 0%, rgba(255, 60, 120, 0.08), transparent 55%),
+        radial-gradient(50vw 50vw at 50% 120%, rgba(120, 90, 255, 0.08), transparent 60%);
+}
+
+/* ============================================================
+ * 通用：把项目里硬编码的深色面统一替换为玻璃面
+ * （Tailwind 任意值类，使用转义选择器精确命中）
+ * ========================================================== */
+.bg-\[\#111\],
+.bg-\[\#1a1a1a\],
+.bg-\[\#151515\],
+.bg-\[\#191919\],
+.bg-\[\#0a0a0a\] {
+    background-color: var(--glass-bg) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+}
+
+.bg-\[\#222\],
+.bg-\[\#333\] {
+    background-color: var(--glass-bg-soft) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    backdrop-filter: blur(10px) saturate(140%);
+}
+
+/* 圆角整体放大、统一描边 */
+.rounded,
+.rounded-md { border-radius: var(--radius-sm) !important; }
+.rounded-lg { border-radius: var(--radius-md) !important; }
+.rounded-xl { border-radius: var(--radius-lg) !important; }
+.rounded-full { border-radius: var(--radius-pill) !important; }
+
+/* 把生硬的深色描边替换为玻璃描边 */
+.border-\[\#333\],
+.border-\[\#222\] { border-color: var(--glass-border) !important; }
+
+/* ============================================================
+ * 顶部操作按钮（历史 / 设置）
+ * ========================================================== */
+header button,
+.home-btn {
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--glass-border) !important;
+    background: var(--glass-bg) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    box-shadow: var(--glass-shadow);
+    transition: all 0.25s ease;
+}
+header button:hover,
+.home-btn:hover {
+    border-color: var(--glass-border-strong) !important;
+    background: var(--glass-bg-strong) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5),
+                0 0 16px rgba(0, 204, 255, 0.25),
+                inset 0 1px 0 var(--glass-highlight);
+}
+
+/* ============================================================
+ * 侧边面板（设置 / 历史）—— 液态玻璃抽屉
+ * ========================================================== */
+#settingsPanel,
+#historyPanel,
+.settings-panel,
+.history-panel {
+    background: var(--glass-bg-strong) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(170%);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(170%);
+    box-shadow: var(--glass-shadow);
+}
+#settingsPanel {                 /* 右侧抽屉：内侧圆角 */
+    border-left: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+}
+#historyPanel {                  /* 左侧抽屉：内侧圆角 */
+    border-right: 1px solid var(--glass-border) !important;
+    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+}
+
+/* 面板内嵌的分组块：更淡的玻璃，营造层次 */
+#settingsPanel > div > .shadow-inner,
+#settingsPanel .shadow-inner {
+    background: var(--glass-bg-soft) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: inset 0 1px 0 var(--glass-highlight) !important;
+}
+
+/* 面板/历史顶部条贴住时也保持玻璃感 */
+.history-panel .bg-\[\#111\],
+.settings-panel .bg-\[\#111\] {
+    background: transparent !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+/* ============================================================
+ * 搜索框 —— 通透玻璃胶囊
+ * ========================================================== */
+.flex.items-stretch.shadow-lg {
+    border-radius: var(--radius-pill) !important;
+    border: 1px solid var(--glass-border) !important;
+    background: var(--glass-bg) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    box-shadow: var(--glass-shadow);
+    overflow: hidden;
+}
+#searchInput {
+    background: transparent !important;
+    border-color: transparent !important;
+}
+#searchInput::placeholder { color: var(--text-muted); }
+
+/* 搜索历史标签 */
+.search-tag {
+    border-radius: var(--radius-pill) !important;
+    background: var(--glass-bg-soft) !important;
+    border: 1px solid var(--glass-border) !important;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+.search-tag:hover {
+    border-color: var(--glass-border-strong) !important;
+    background: var(--glass-bg) !important;
+}
+
+/* ============================================================
+ * 结果卡片 —— 玻璃卡 + 顶部高光
+ * ========================================================== */
+.card-hover {
+    border-radius: var(--radius-lg) !important;
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    box-shadow: var(--glass-shadow);
+}
+.card-hover:hover {
+    border-color: var(--glass-border-strong) !important;
+    transform: translateY(-4px);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5),
+                0 0 18px rgba(0, 204, 255, 0.18),
+                inset 0 1px 0 var(--glass-highlight);
+}
+
+/* 历史记录项玻璃化 */
+.history-item {
+    border-radius: var(--radius-md) !important;
+    background: var(--glass-bg-soft) !important;
+    border: 1px solid var(--glass-border) !important;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+}
+.history-item:hover {
+    border-color: var(--glass-border-strong) !important;
+    background: var(--glass-bg) !important;
+}
+
+/* ============================================================
+ * 弹窗（详情 / 密码）—— 强玻璃
+ * ========================================================== */
+#modal > div,
+#passwordModal > div {
+    border-radius: var(--radius-xl) !important;
+    background: var(--glass-bg-strong) !important;
+    border: 1px solid var(--glass-border) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6),
+                0 0 24px rgba(0, 204, 255, 0.12),
+                inset 0 1px 0 var(--glass-highlight) !important;
+}
+/* 弹窗遮罩：用模糊代替纯黑，营造景深 */
+#modal,
+#passwordModal {
+    background: rgba(5, 8, 14, 0.55) !important;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+#modal .modal-detail-info {
+    background: var(--glass-bg-soft) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+/* 集数按钮玻璃化 */
+#episodesGrid button {
+    border-radius: var(--radius-sm) !important;
+    background: var(--glass-bg-soft) !important;
+    border: 1px solid var(--glass-border) !important;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+
+/* ============================================================
+ * 渐变按钮 —— 玻璃光泽
+ * ========================================================== */
+.bg-gradient-to-r {
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 var(--glass-highlight);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 输入框玻璃化 */
+input[type="text"],
+input[type="password"],
+input[type="search"] {
+    border-radius: var(--radius-sm) !important;
+    background: var(--glass-bg-soft) !important;
+    border: 1px solid var(--glass-border) !important;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+input:focus {
+    border-color: var(--glass-border-strong) !important;
+    outline: none;
+}
+
+/* 关闭按钮玻璃化 */
+.close-btn {
+    border-radius: var(--radius-sm) !important;
+    background: var(--glass-bg-soft) !important;
+    border: 1px solid var(--glass-border) !important;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+.close-btn:hover {
+    background: var(--glass-bg) !important;
+    border-color: var(--glass-border-strong) !important;
+}
+
+/* 底部栏 / Toast 玻璃化 */
+.footer {
+    background: var(--glass-bg) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    border-top: 1px solid var(--glass-border) !important;
+}
+#toast {
+    border-radius: var(--radius-md) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
+    border: 1px solid var(--glass-border) !important;
+}
+
+/* ============================================================
+ * 播放器页头（player.html）玻璃化
+ * ========================================================== */
+.player-header {
+    background: var(--glass-bg-strong) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    border-bottom: 1px solid var(--glass-border) !important;
+}
+
+/* ============================================================
+ * 降级与无障碍：不支持 backdrop-filter 时回退为实色；
+ * 用户开启「减少动态效果」时关闭位移动画。
+ * ========================================================== */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .bg-\[\#111\], .bg-\[\#1a1a1a\], .bg-\[\#151515\], .bg-\[\#191919\], .bg-\[\#0a0a0a\],
+    #settingsPanel, #historyPanel, #modal > div, #passwordModal > div,
+    .card-hover, .footer, .player-header, .flex.items-stretch.shadow-lg {
+        background-color: var(--card-gradient-start) !important;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .card-hover:hover, .history-item:hover, header button:hover { transform: none !important; }
+}
+
+/* 移动端：降低模糊强度，缓解低端机性能压力 */
+@media (max-width: 640px) {
+    :root { --glass-blur: 12px; --glass-blur-strong: 18px; }
+}

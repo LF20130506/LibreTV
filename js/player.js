@@ -485,6 +485,9 @@ function initPlayer(videoUrl) {
                 const hls = new Hls(hlsConfig);
                 currentHls = hls;
 
+                // 新的 HLS 实例：重置画质档位绑定状态
+                if (window.PlayerEnhance) window.PlayerEnhance.resetQuality();
+
                 // 跟踪是否已经显示错误
                 let errorDisplayed = false;
                 // 跟踪是否有错误发生
@@ -527,6 +530,8 @@ function initPlayer(videoUrl) {
                 video.disableRemotePlayback = false;
 
                 hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                    // 构建/更新「画质」档位选择
+                    if (window.PlayerEnhance) window.PlayerEnhance.updateQuality(art, hls);
                     video.play().catch(e => {
                     });
                 });
@@ -637,6 +642,8 @@ function initPlayer(videoUrl) {
     // 播放器加载完成后初始隐藏工具栏
     art.on('ready', () => {
         hideControls();
+        // 初始化「画质增强」设置并应用已保存的预设
+        if (window.PlayerEnhance) window.PlayerEnhance.initEnhance(art);
     });
 
     // 全屏 Web 模式处理

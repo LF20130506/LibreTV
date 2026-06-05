@@ -22,6 +22,19 @@
     <meta http-equiv="Expires" content="0">
 </head>
 <body>
+    <!-- 画质增强用的 SVG 卷积锐化滤镜（隐藏，供 CSS filter: url(#...) 引用） -->
+    <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true">
+        <defs>
+            <filter id="ltSharpen" x="0" y="0">
+                <feConvolveMatrix order="3" preserveAlpha="true"
+                    kernelMatrix="0 -1 0  -1 5 -1  0 -1 0"/>
+            </filter>
+            <filter id="ltSharpenStrong" x="0" y="0">
+                <feConvolveMatrix order="3" preserveAlpha="true"
+                    kernelMatrix="-1 -1 -1  -1 9 -1  -1 -1 -1"/>
+            </filter>
+        </defs>
+    </svg>
     <header class="player-header-fixed p-4 flex items-center border-b border-[#333] gap-2">
         <div class="flex items-center min-w-0">
             <button id="homeButton" type="button" class="flex items-center min-w-0 cursor-pointer home-button">
@@ -232,6 +245,7 @@
     <script src="js/ui.js"></script>
     <script src="js/api.js"></script>
     <script src="js/search.js"></script>
+    <script src="js/player-enhance.js"></script>
     <script src="js/player.js"></script>
 
     <script>

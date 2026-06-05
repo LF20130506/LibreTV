@@ -951,6 +951,7 @@ async function showDetails(id, vod_name, sourceCode) {
 
             modalContent.innerHTML = `
                 ${detailInfoHtml}
+                <div id="watchProvidersArea"></div>
                 <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
                     <div class="flex items-center gap-2">
                         <button onclick="toggleEpisodeOrder('${sourceCode}', '${id}')" 
@@ -980,6 +981,15 @@ async function showDetails(id, vod_name, sourceCode) {
         }
 
         modal.classList.remove('hidden');
+
+        // 异步渲染「可观看平台」(TMDB/JustWatch)，失败不影响详情展示
+        if (window.WatchProviders && data.episodes && data.episodes.length > 0) {
+            window.WatchProviders.render(
+                'watchProvidersArea',
+                vod_name,
+                data.videoInfo && data.videoInfo.year
+            );
+        }
     } catch (error) {
         console.error('获取详情错误:', error);
         showToast('获取详情失败，请稍后重试', 'error');

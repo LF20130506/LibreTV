@@ -11,11 +11,13 @@
     const LS_ENHANCE = 'playerEnhanceLevel';
 
     // 画质增强预设：CSS filter 字符串
+    // 注意：不使用 brightness()（会把高光推到溢出，产生"假 HDR"过曝感）；
+    // 锐化交给 sRGB 空间下的柔性卷积核，contrast/saturate 仅做轻微补偿。
     const ENHANCE_PRESETS = [
         { value: 'off',      html: '关闭',  filter: '' },
-        { value: 'light',    html: '轻度',  filter: 'contrast(1.05) saturate(1.10) brightness(1.02)' },
-        { value: 'standard', html: '标准',  filter: 'url(#ltSharpen) contrast(1.10) saturate(1.15) brightness(1.03)' },
-        { value: 'strong',   html: '强',    filter: 'url(#ltSharpenStrong) contrast(1.18) saturate(1.25) brightness(1.05)' },
+        { value: 'light',    html: '轻度',  filter: 'url(#ltSharpenLight) saturate(1.04)' },
+        { value: 'standard', html: '标准',  filter: 'url(#ltSharpen) contrast(1.03) saturate(1.07)' },
+        { value: 'strong',   html: '强',    filter: 'url(#ltSharpenStrong) contrast(1.05) saturate(1.10)' },
     ];
 
     function getSavedEnhance() {

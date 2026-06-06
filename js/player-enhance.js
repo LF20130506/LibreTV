@@ -10,14 +10,16 @@
 (function (global) {
     const LS_ENHANCE = 'playerEnhanceLevel';
 
-    // 画质增强预设：CSS filter 字符串
-    // 注意：不使用 brightness()（会把高光推到溢出，产生"假 HDR"过曝感）；
-    // 锐化交给 sRGB 空间下的柔性卷积核，contrast/saturate 仅做轻微补偿。
+    // 画质增强预设。
+    // CSS 档（off/light/standard/strong）：SVG 柔性锐化，无 brightness 防过曝。
+    // Anime4K 档（a4k/a4k_strong）：WebGL 实时增强，钳制锐化 + 线条加深，几乎无白边。
     const ENHANCE_PRESETS = [
-        { value: 'off',      html: '关闭',  filter: '' },
-        { value: 'light',    html: '轻度',  filter: 'url(#ltSharpenLight) saturate(1.04)' },
-        { value: 'standard', html: '标准',  filter: 'url(#ltSharpen) contrast(1.03) saturate(1.07)' },
-        { value: 'strong',   html: '强',    filter: 'url(#ltSharpenStrong) contrast(1.05) saturate(1.10)' },
+        { value: 'off',        html: '关闭',         filter: '' },
+        { value: 'light',      html: '轻度',         filter: 'url(#ltSharpenLight) saturate(1.04)' },
+        { value: 'standard',   html: '标准',         filter: 'url(#ltSharpen) contrast(1.03) saturate(1.07)' },
+        { value: 'strong',     html: '强',           filter: 'url(#ltSharpenStrong) contrast(1.05) saturate(1.10)' },
+        { value: 'a4k',        html: 'Anime4K',      filter: '', anime4k: 'a4k' },
+        { value: 'a4k_strong', html: 'Anime4K 强',   filter: '', anime4k: 'a4k_strong' },
     ];
 
     function getSavedEnhance() {
@@ -30,12 +32,26 @@
         return ENHANCE_PRESETS.find((p) => p.value === value) || ENHANCE_PRESETS[0];
     }
 
-    // 把增强滤镜应用到视频元素
+    // 把增强应用到视频元素：CSS 滤镜档与 Anime4K(WebGL)档互斥
     function applyEnhance(art, value) {
         if (!art || !art.video) return;
         const preset = presetByValue(value);
-        art.video.style.filter = preset.filter;
-        // 提示音/无障碍：记录当前档位
+        if (preset.anime4k) {
+            // 切到 Anime4K：清掉 CSS 滤镜，启用 WebGL 覆盖层
+            art.video.style.filter = '';
+            let ok = false;
+            if (global.Anime4K) ok = global.Anime4K.enable(art, preset.anime4k);
+            // WebGL 启用失败则回退到 CSS「标准」档，保证仍有增强效果
+            if (!ok) {
+                art.video.style.filter = presetByValue('standard').filter;
+                if (typeof global.showToast === 'function') {
+                    global.showToast('当前环境不支持 Anime4K，已回退为普通增强', 'warning');
+                }
+            }
+        } else {
+            if (global.Anime4K) global.Anime4K.disable();
+            art.video.style.filter = preset.filter;
+        }
         art.video.dataset.enhance = preset.value;
     }
 
@@ -68,6 +84,8 @@
 
         // 切集/换源后视频元素的 filter 可能被重置，重新应用
         art.on('video:loadedmetadata', () => applyEnhance(art, getSavedEnhance()));
+        // 播放器销毁时关闭 Anime4K 渲染循环
+        try { art.on('destroy', () => global.Anime4K && global.Anime4K.disable()); } catch (e) {}
     }
     let enhanceInited = false;
 

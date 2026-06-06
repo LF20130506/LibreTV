@@ -1,0 +1,218 @@
+// js/anime4k.js
+// Anime4K 风格的 WebGL2 实时画质增强（面向动画）。
+// 原理：把 <video> 当前帧作为纹理，在 GPU 上运行「邻域钳制锐化 + 线条加深」着色器，
+// 渲染到覆盖在视频上方的 canvas。
+//   · 钳制(clamp 到邻域 min/max) 从根本上消除过冲 → 无白边/光晕（解决卷积锐化的通病）
+//   · 线条加深只会变暗、不会变亮 → 不产生白边
+// 全程容错：WebGL2 不可用 / 视频跨域污染 / 着色器编译失败 → 返回 false 由调用方回退。
+
+(function (global) {
+    // 强度档位
+    const PROFILES = {
+        a4k:        { sharp: 0.85, line: 0.30 },
+        a4k_strong: { sharp: 1.45, line: 0.50 },
+    };
+
+    const VERT = `#version 300 es
+    in vec2 aPos;
+    out vec2 vUv;
+    void main(){
+        vUv = aPos * 0.5 + 0.5;
+        gl_Position = vec4(aPos, 0.0, 1.0);
+    }`;
+
+    const FRAG = `#version 300 es
+    precision highp float;
+    uniform sampler2D uTex;
+    uniform vec2 uTexel;   // 1.0 / 纹理尺寸
+    uniform float uSharp;  // 锐化强度
+    uniform float uLine;   // 线条加深强度
+    in vec2 vUv;
+    out vec4 frag;
+    float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
+    void main(){
+        vec3 c  = texture(uTex, vUv).rgb;
+        vec3 n  = texture(uTex, vUv + vec2(0.0, -uTexel.y)).rgb;
+        vec3 s  = texture(uTex, vUv + vec2(0.0,  uTexel.y)).rgb;
+        vec3 e  = texture(uTex, vUv + vec2( uTexel.x, 0.0)).rgb;
+        vec3 w  = texture(uTex, vUv + vec2(-uTexel.x, 0.0)).rgb;
+        vec3 ne = texture(uTex, vUv + vec2( uTexel.x, -uTexel.y)).rgb;
+        vec3 nw = texture(uTex, vUv + vec2(-uTexel.x, -uTexel.y)).rgb;
+        vec3 se = texture(uTex, vUv + vec2( uTexel.x,  uTexel.y)).rgb;
+        vec3 sw = texture(uTex, vUv + vec2(-uTexel.x,  uTexel.y)).rgb;
+
+        float lc = luma(c);
+        float ln = luma(n),  ls = luma(s),  le = luma(e),  lw = luma(w);
+        float lne= luma(ne), lnw= luma(nw), lse= luma(se), lsw= luma(sw);
+
+        // 邻域 8 点的均值（模糊）与 min/max
+        float blur = (ln+ls+le+lw+lne+lnw+lse+lsw) * 0.125;
+        float mn = min(min(min(ln,ls),min(le,lw)), min(min(lne,lnw),min(lse,lsw)));
+        float mx = max(max(max(ln,ls),max(le,lw)), max(max(lne,lnw),max(lse,lsw)));
+        mn = min(mn, lc); mx = max(mx, lc);
+
+        // 钳制式 USM 锐化：把结果限制在邻域 min/max 内 → 无过冲、无白边
+        float detail = lc - blur;
+        float sharp = clamp(lc + uSharp * detail, mn, mx);
+
+        // 线条加深：在高对比边缘处把亮度往邻域最暗拉（只变暗）
+        float edge = clamp((mx - mn) * 2.0, 0.0, 1.0);
+        float outL = mix(sharp, min(sharp, mn), uLine * edge);
+
+        // 把亮度变化按比例施加到颜色上，保持色相
+        float ratio = outL / max(lc, 1e-4);
+        frag = vec4(clamp(c * ratio, 0.0, 1.0), 1.0);
+    }`;
+
+    let gl = null, canvas = null, program = null, vao = null, tex = null;
+    let uTexel, uSharp, uLine;
+    let rafId = 0, rvfcHandle = 0, running = false;
+    let videoEl = null, profile = PROFILES.a4k;
+    let resizeObs = null;
+
+    function compile(type, src) {
+        const sh = gl.createShader(type);
+        gl.shaderSource(sh, src);
+        gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+            throw new Error('shader: ' + gl.getShaderInfoLog(sh));
+        }
+        return sh;
+    }
+
+    function initGL() {
+        canvas = document.createElement('canvas');
+        canvas.className = 'anime4k-canvas';
+        canvas.style.cssText =
+            'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;' +
+            'pointer-events:none;z-index:11;';
+        gl = canvas.getContext('webgl2', { alpha: false, premultipliedAlpha: false, antialias: false });
+        if (!gl) throw new Error('WebGL2 不可用');
+
+        const vs = compile(gl.VERTEX_SHADER, VERT);
+        const fs = compile(gl.FRAGMENT_SHADER, FRAG);
+        program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.bindAttribLocation(program, 0, 'aPos');
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            throw new Error('program: ' + gl.getProgramInfoLog(program));
+        }
+        gl.useProgram(program);
+        uTexel = gl.getUniformLocation(program, 'uTexel');
+        uSharp = gl.getUniformLocation(program, 'uSharp');
+        uLine = gl.getUniformLocation(program, 'uLine');
+        gl.uniform1i(gl.getUniformLocation(program, 'uTex'), 0);
+
+        // 全屏三角形
+        vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
+        const buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+        tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    }
+
+    function syncSize() {
+        if (!videoEl) return;
+        const w = videoEl.videoWidth || 0;
+        const h = videoEl.videoHeight || 0;
+        if (w && h && (canvas.width !== w || canvas.height !== h)) {
+            canvas.width = w;
+            canvas.height = h;
+            gl.viewport(0, 0, w, h);
+            gl.uniform2f(uTexel, 1.0 / w, 1.0 / h);
+        }
+    }
+
+    function renderFrame() {
+        if (!running || !videoEl) return;
+        try {
+            if (videoEl.readyState >= 2 && videoEl.videoWidth) {
+                syncSize();
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, tex);
+                // 可能抛 SecurityError（视频被跨域污染）→ 由外层 catch 关闭
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoEl);
+                gl.uniform1f(uSharp, profile.sharp);
+                gl.uniform1f(uLine, profile.line);
+                gl.bindVertexArray(vao);
+                gl.drawArrays(gl.TRIANGLES, 0, 3);
+            }
+        } catch (e) {
+            console.warn('[Anime4K] 渲染失败，已关闭:', e && e.message);
+            disable();
+            return;
+        }
+        scheduleNext();
+    }
+
+    function scheduleNext() {
+        if (!running) return;
+        if (videoEl.requestVideoFrameCallback) {
+            rvfcHandle = videoEl.requestVideoFrameCallback(renderFrame);
+        } else {
+            rafId = requestAnimationFrame(renderFrame);
+        }
+    }
+
+    /**
+     * 启用 Anime4K。幂等：重复调用只更新强度。
+     * @param {object} art ArtPlayer 实例
+     * @param {string} profileKey 'a4k' | 'a4k_strong'
+     * @returns {boolean} 是否成功启用
+     */
+    function enable(art, profileKey) {
+        profile = PROFILES[profileKey] || PROFILES.a4k;
+        if (!art || !art.video) return false;
+        try {
+            if (!gl) initGL();
+            if (running && videoEl === art.video) return true; // 已在运行
+
+            videoEl = art.video;
+            const parent = videoEl.parentElement;
+            if (parent && !canvas.parentElement) {
+                if (getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+                parent.appendChild(canvas);
+            }
+            // 监听容器尺寸变化（全屏/旋屏）
+            if (!resizeObs && global.ResizeObserver) {
+                resizeObs = new ResizeObserver(() => syncSize());
+                resizeObs.observe(parent || canvas);
+            }
+            running = true;
+            canvas.style.display = 'block';
+            scheduleNext();
+            return true;
+        } catch (e) {
+            console.warn('[Anime4K] 初始化失败，回退普通播放:', e && e.message);
+            disable();
+            return false;
+        }
+    }
+
+    /** 关闭 Anime4K，移除覆盖层（视频本身始终在底层正常播放）。 */
+    function disable() {
+        running = false;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+        if (rvfcHandle && videoEl && videoEl.cancelVideoFrameCallback) {
+            try { videoEl.cancelVideoFrameCallback(rvfcHandle); } catch (e) {}
+        }
+        rvfcHandle = 0;
+        if (canvas) canvas.style.display = 'none';
+    }
+
+    function isRunning() { return running; }
+
+    global.Anime4K = { enable, disable, isRunning };
+})(window);

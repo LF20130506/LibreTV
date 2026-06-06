@@ -392,3 +392,56 @@ input:focus {
 @media (max-width: 640px) {
     .lt-quality-badge { top: 6px; right: 6px; font-size: 0.66rem; padding: 1px 6px; }
 }
+
+/* ============================================================
+ * 下载进度浮层
+ * ========================================================== */
+.lt-dl-progress {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 8, 14, 0.55);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+.lt-dl-card {
+    width: min(86vw, 360px);
+    padding: 1.25rem 1.25rem 1rem;
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    box-shadow: var(--glass-shadow);
+    text-align: center;
+    color: var(--text-color);
+}
+.lt-dl-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.85rem; }
+.lt-dl-bar {
+    height: 8px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.10);
+    overflow: hidden;
+    margin-bottom: 0.6rem;
+}
+.lt-dl-fill {
+    height: 100%;
+    width: 0;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+    transition: width 0.2s ease;
+}
+.lt-dl-text { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.9rem; }
+.lt-dl-cancel {
+    padding: 0.4rem 1.2rem;
+    font-size: 0.82rem;
+    color: #fff;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--glass-border-strong);
+    background: rgba(0, 204, 255, 0.12);
+    transition: all 0.2s ease;
+}
+.lt-dl-cancel:hover { background: rgba(255, 60, 120, 0.18); border-color: var(--accent-color); }

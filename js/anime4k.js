@@ -7,10 +7,12 @@
 // 全程容错：WebGL2 不可用 / 视频跨域污染 / 着色器编译失败 → 返回 false 由调用方回退。
 
 (function (global) {
-    // 强度档位
+    // 强度档位。mode: 0 = Anime4K(动画线条增强)，1 = CAS(实拍自适应锐化/超分)
     const PROFILES = {
-        a4k:        { sharp: 0.85, line: 0.30 },
-        a4k_strong: { sharp: 1.45, line: 0.50 },
+        a4k:        { mode: 0, sharp: 0.85, line: 0.30 },
+        a4k_strong: { mode: 0, sharp: 1.45, line: 0.50 },
+        sr:         { mode: 1, sharp: 0.62, line: 0.0 },
+        sr_strong:  { mode: 1, sharp: 0.88, line: 0.0 },
     };
 
     const VERT = `#version 300 es
@@ -27,6 +29,7 @@
     uniform vec2 uTexel;   // 1.0 / 纹理尺寸
     uniform float uSharp;  // 锐化强度
     uniform float uLine;   // 线条加深强度
+    uniform int uMode;     // 0=Anime4K, 1=CAS(实拍超分)
     in vec2 vUv;
     out vec4 frag;
     float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
@@ -41,6 +44,22 @@
         vec3 se = texture(uTex, vUv + vec2( uTexel.x,  uTexel.y)).rgb;
         vec3 sw = texture(uTex, vUv + vec2(-uTexel.x,  uTexel.y)).rgb;
 
+        if (uMode == 1) {
+            // ===== CAS：对比度自适应锐化（适合实拍/纪录片，无线条加深、无白边）=====
+            vec3 mnc = min(min(min(n, s), min(e, w)), c);
+            mnc = min(mnc, min(min(ne, nw), min(se, sw)));
+            vec3 mxc = max(max(max(n, s), max(e, w)), c);
+            mxc = max(mxc, max(max(ne, nw), max(se, sw)));
+            // 自适应权重：亮部/暗部裕度小则少锐化，避免过冲
+            vec3 amp = sqrt(clamp(min(mnc, 1.0 - mxc) / max(mxc, 1e-4), 0.0, 1.0));
+            float peak = -1.0 / mix(8.0, 5.0, clamp(uSharp, 0.0, 1.0));
+            vec3 wgt = amp * peak;
+            vec3 outC = (c + (n + s + e + w) * wgt) / (1.0 + 4.0 * wgt);
+            frag = vec4(clamp(outC, 0.0, 1.0), 1.0);
+            return;
+        }
+
+        // ===== Anime4K：钳制锐化 + 线条加深（适合动画）=====
         float lc = luma(c);
         float ln = luma(n),  ls = luma(s),  le = luma(e),  lw = luma(w);
         float lne= luma(ne), lnw= luma(nw), lse= luma(se), lsw= luma(sw);
@@ -65,7 +84,7 @@
     }`;
 
     let gl = null, canvas = null, program = null, vao = null, tex = null;
-    let uTexel, uSharp, uLine;
+    let uTexel, uSharp, uLine, uMode;
     let rafId = 0, rvfcHandle = 0, running = false;
     let videoEl = null, profile = PROFILES.a4k;
     let resizeObs = null;
@@ -103,6 +122,7 @@
         uTexel = gl.getUniformLocation(program, 'uTexel');
         uSharp = gl.getUniformLocation(program, 'uSharp');
         uLine = gl.getUniformLocation(program, 'uLine');
+        uMode = gl.getUniformLocation(program, 'uMode');
         gl.uniform1i(gl.getUniformLocation(program, 'uTex'), 0);
 
         // 全屏三角形
@@ -146,6 +166,7 @@
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoEl);
                 gl.uniform1f(uSharp, profile.sharp);
                 gl.uniform1f(uLine, profile.line);
+                gl.uniform1i(uMode, profile.mode | 0);
                 gl.bindVertexArray(vao);
                 gl.drawArrays(gl.TRIANGLES, 0, 3);
             }

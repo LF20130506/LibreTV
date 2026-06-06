@@ -18,8 +18,10 @@
         { value: 'light',      html: '轻度',         filter: 'url(#ltSharpenLight) saturate(1.04)' },
         { value: 'standard',   html: '标准',         filter: 'url(#ltSharpen) contrast(1.03) saturate(1.07)' },
         { value: 'strong',     html: '强',           filter: 'url(#ltSharpenStrong) contrast(1.05) saturate(1.10)' },
-        { value: 'a4k',        html: 'Anime4K',      filter: '', anime4k: 'a4k' },
-        { value: 'a4k_strong', html: 'Anime4K 强',   filter: '', anime4k: 'a4k_strong' },
+        { value: 'a4k',        html: 'Anime4K(动画)', filter: '', anime4k: 'a4k' },
+        { value: 'a4k_strong', html: 'Anime4K 强',    filter: '', anime4k: 'a4k_strong' },
+        { value: 'sr',         html: '超分(实拍)',     filter: '', anime4k: 'sr' },
+        { value: 'sr_strong',  html: '超分 强',        filter: '', anime4k: 'sr_strong' },
     ];
 
     function getSavedEnhance() {
@@ -61,6 +63,7 @@
         const saved = getSavedEnhance();
         applyEnhance(art, saved);
         initQualityBadge(art); // 自动检测并显示分辨率画质角标
+        if (global.LTDownloader) global.LTDownloader.setup(art); // 下载本集按钮
 
         try {
             art.setting.add({

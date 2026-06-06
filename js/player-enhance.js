@@ -60,6 +60,7 @@
         if (!art || enhanceInited) return;
         const saved = getSavedEnhance();
         applyEnhance(art, saved);
+        initQualityBadge(art); // 自动检测并显示分辨率画质角标
 
         try {
             art.setting.add({
@@ -91,9 +92,58 @@
 
     // 由 hls.levels 构造画质档位标签
     function levelLabel(level, index) {
-        if (level.height) return `${level.height}P`;
+        if (level.height) return qualityLabel(level.height);
         if (level.bitrate) return `${Math.round(level.bitrate / 1000)} kbps`;
         return `档位 ${index + 1}`;
+    }
+
+    // ===== 自动检测分辨率并显示画质角标 =====
+
+    // 按高度映射为通俗画质名（取就近的标准档）
+    function qualityLabel(h) {
+        if (!h) return '';
+        if (h >= 4320) return '8K';
+        if (h >= 2160) return '4K';
+        if (h >= 1440) return '1440P';
+        if (h >= 1080) return '1080P';
+        if (h >= 720)  return '720P';
+        if (h >= 480)  return '480P';
+        if (h >= 360)  return '360P';
+        return `${h}P`;
+    }
+
+    let badgeEl = null;
+    function initQualityBadge(art) {
+        if (badgeEl || !art || !art.video) return;
+        const parent =
+            (art.template && (art.template.$player || art.template.$container)) ||
+            art.video.parentElement;
+        if (!parent) return;
+        if (getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+
+        badgeEl = document.createElement('div');
+        badgeEl.className = 'lt-quality-badge';
+        badgeEl.style.display = 'none';
+        parent.appendChild(badgeEl);
+
+        const update = () => updateQualityBadge(art);
+        art.video.addEventListener('loadedmetadata', update);
+        art.video.addEventListener('resize', update); // 分辨率变化（换源/ABR 切换）时触发
+        art.on('video:loadedmetadata', update);
+        update();
+    }
+
+    function updateQualityBadge(art) {
+        if (!badgeEl || !art || !art.video) return;
+        const w = art.video.videoWidth || 0;
+        const h = art.video.videoHeight || 0;
+        if (!h) { badgeEl.style.display = 'none'; return; }
+        const label = qualityLabel(h);
+        badgeEl.textContent = label;
+        badgeEl.title = `源分辨率 ${w}×${h}`;
+        badgeEl.style.display = 'block';
+        // 4K/8K 高亮
+        badgeEl.classList.toggle('is-uhd', h >= 2160);
     }
 
     // 初始化/更新「画质」设置项（每次 MANIFEST_PARSED 调用）

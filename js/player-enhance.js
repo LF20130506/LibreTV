@@ -55,6 +55,9 @@
             art.video.style.filter = preset.filter;
         }
         art.video.dataset.enhance = preset.value;
+        // 刷新画质角标（增强输出尺寸在首帧渲染后才确定，故延迟多刷几次）
+        updateQualityBadge(art);
+        [120, 400, 900].forEach((t) => setTimeout(() => updateQualityBadge(art), t));
     }
 
     // 初始化「画质增强」设置项（只需调用一次）
@@ -198,15 +201,25 @@
 
     function updateQualityBadge(art) {
         if (!badgeEl || !art || !art.video) return;
-        const w = art.video.videoWidth || 0;
-        const h = art.video.videoHeight || 0;
-        if (!h) { badgeEl.style.display = 'none'; return; }
-        const label = qualityLabel(h);
-        badgeEl.textContent = label;
-        badgeEl.title = `源分辨率 ${w}×${h}`;
+        const sw = art.video.videoWidth || 0;
+        const sh = art.video.videoHeight || 0;
+        if (!sh) { badgeEl.style.display = 'none'; return; }
+
+        // 若 Anime4K/超分 正在运行且实际提升了输出分辨率，则显示增强后画质
+        let h = sh, w = sw, enhanced = false;
+        if (global.Anime4K && global.Anime4K.isRunning && global.Anime4K.isRunning()) {
+            const oh = global.Anime4K.getOutputHeight ? global.Anime4K.getOutputHeight() : 0;
+            const ow = global.Anime4K.getOutputWidth ? global.Anime4K.getOutputWidth() : 0;
+            if (oh > sh) { h = oh; w = ow || sw; enhanced = true; }
+        }
+
+        badgeEl.textContent = (enhanced ? '✨' : '') + qualityLabel(h);
+        badgeEl.title = enhanced
+            ? `AI 增强：源 ${sw}×${sh} → 输出 ${w}×${h}`
+            : `源分辨率 ${sw}×${sh}`;
         badgeEl.style.display = 'block';
-        // 4K/8K 高亮
         badgeEl.classList.toggle('is-uhd', h >= 2160);
+        badgeEl.classList.toggle('is-enhanced', enhanced);
     }
 
     // 初始化/更新「画质」设置项（每次 MANIFEST_PARSED 调用）

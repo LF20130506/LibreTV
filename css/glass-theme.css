@@ -382,6 +382,12 @@ input:focus {
     pointer-events: none;
     user-select: none;
 }
+/* AI 增强态：青绿描边，区别于源画质 */
+.lt-quality-badge.is-enhanced {
+    color: #d6fff4;
+    border-color: rgba(0, 255, 200, 0.55);
+    background: linear-gradient(135deg, rgba(0, 180, 160, 0.40), rgba(0, 204, 255, 0.40));
+}
 /* 4K / 8K 用霓虹强调色高亮 */
 .lt-quality-badge.is-uhd {
     color: #fff;

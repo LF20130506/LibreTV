@@ -89,6 +89,7 @@
     let videoEl = null, profile = PROFILES.a4k;
     let resizeObs = null;
     let strengthMult = 1.0; // 强度微调倍率（用户滑块）
+    let outputHeight = 0, outputWidth = 0;
 
     /** 设置强度倍率（0.3~1.8），实时生效 */
     function setStrength(mult) {
@@ -150,17 +151,35 @@
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     }
 
+    // 计算增强输出尺寸：低于 1440p 的源上采样到 1440p（真正增加输出像素），
+    // 已达到/超过 1440p 的源保持原样（不降采样）。
+    function computeOutput(sw, sh) {
+        if (!sw || !sh) return [0, 0];
+        let th = sh < 1440 ? 1440 : sh;
+        const scale = th / sh;
+        return [Math.max(1, Math.round(sw * scale)), th];
+    }
+
     function syncSize() {
         if (!videoEl) return;
-        const w = videoEl.videoWidth || 0;
-        const h = videoEl.videoHeight || 0;
-        if (w && h && (canvas.width !== w || canvas.height !== h)) {
-            canvas.width = w;
-            canvas.height = h;
-            gl.viewport(0, 0, w, h);
-            gl.uniform2f(uTexel, 1.0 / w, 1.0 / h);
+        const sw = videoEl.videoWidth || 0;
+        const sh = videoEl.videoHeight || 0;
+        if (!sw || !sh) return;
+        const [ow, oh] = computeOutput(sw, sh);
+        if (canvas.width !== ow || canvas.height !== oh) {
+            canvas.width = ow;
+            canvas.height = oh;
+            gl.viewport(0, 0, ow, oh);
+            outputHeight = oh;
+            outputWidth = ow;
+            // uTexel 基于源尺寸 → 锐化作用于真实源细节；纹理按源分辨率上传
+            gl.uniform2f(uTexel, 1.0 / sw, 1.0 / sh);
         }
     }
+
+    /** 增强后的输出分辨率（未运行返回 0） */
+    function getOutputHeight() { return running ? outputHeight : 0; }
+    function getOutputWidth() { return running ? outputWidth : 0; }
 
     function renderFrame() {
         if (!running || !videoEl) return;
@@ -245,5 +264,5 @@
 
     function isRunning() { return running; }
 
-    global.Anime4K = { enable, disable, isRunning, setStrength };
+    global.Anime4K = { enable, disable, isRunning, setStrength, getOutputHeight, getOutputWidth };
 })(window);

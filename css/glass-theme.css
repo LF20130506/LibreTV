@@ -445,3 +445,33 @@ input:focus {
     transition: all 0.2s ease;
 }
 .lt-dl-cancel:hover { background: rgba(255, 60, 120, 0.18); border-color: var(--accent-color); }
+
+/* ============================================================
+ * 增强强度滑块面板
+ * ========================================================== */
+.lt-strength-panel {
+    position: absolute;
+    right: 12px;
+    bottom: 64px;
+    z-index: 20;
+    width: 200px;
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(170%);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(170%);
+    box-shadow: var(--glass-shadow);
+    color: var(--text-color);
+}
+.lt-sp-label { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.55rem; }
+.lt-sp-val { color: var(--primary-color); font-variant-numeric: tabular-nums; }
+.lt-strength-panel .lt-sp-range {
+    width: 100%;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+.lt-sp-hint { margin-top: 0.5rem; font-size: 0.68rem; color: var(--text-muted); }
+@media (max-width: 640px) {
+    .lt-strength-panel { width: 168px; bottom: 56px; right: 8px; }
+}

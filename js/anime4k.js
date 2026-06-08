@@ -88,6 +88,13 @@
     let rafId = 0, rvfcHandle = 0, running = false;
     let videoEl = null, profile = PROFILES.a4k;
     let resizeObs = null;
+    let strengthMult = 1.0; // 强度微调倍率（用户滑块）
+
+    /** 设置强度倍率（0.3~1.8），实时生效 */
+    function setStrength(mult) {
+        const m = Math.max(0.2, Math.min(2.0, Number(mult) || 1.0));
+        strengthMult = m;
+    }
 
     function compile(type, src) {
         const sh = gl.createShader(type);
@@ -164,8 +171,11 @@
                 gl.bindTexture(gl.TEXTURE_2D, tex);
                 // 可能抛 SecurityError（视频被跨域污染）→ 由外层 catch 关闭
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoEl);
-                gl.uniform1f(uSharp, profile.sharp);
-                gl.uniform1f(uLine, profile.line);
+                // CAS 的 sharp 取值范围有限(0~1)，用倍率时做钳制
+                gl.uniform1f(uSharp, profile.mode === 1
+                    ? Math.min(0.98, profile.sharp * strengthMult)
+                    : profile.sharp * strengthMult);
+                gl.uniform1f(uLine, profile.line * strengthMult);
                 gl.uniform1i(uMode, profile.mode | 0);
                 gl.bindVertexArray(vao);
                 gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -235,5 +245,5 @@
 
     function isRunning() { return running; }
 
-    global.Anime4K = { enable, disable, isRunning };
+    global.Anime4K = { enable, disable, isRunning, setStrength };
 })(window);

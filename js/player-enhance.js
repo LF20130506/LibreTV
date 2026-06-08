@@ -61,9 +61,11 @@
     function initEnhance(art) {
         if (!art || enhanceInited) return;
         const saved = getSavedEnhance();
+        if (global.Anime4K) global.Anime4K.setStrength(getStrength()); // 应用已保存的强度
         applyEnhance(art, saved);
         initQualityBadge(art); // 自动检测并显示分辨率画质角标
-        if (global.LTDownloader) global.LTDownloader.setup(art); // 下载本集按钮
+        initStrengthControl(art); // 增强强度滑块
+        if (global.LTDownloader) global.LTDownloader.setup(art); // 下载（本集/整季）
 
         try {
             art.setting.add({
@@ -92,6 +94,64 @@
         try { art.on('destroy', () => global.Anime4K && global.Anime4K.disable()); } catch (e) {}
     }
     let enhanceInited = false;
+
+    // ===== 增强强度滑块（对 Anime4K / 超分 生效）=====
+    const LS_STRENGTH = 'enhanceStrength';
+    function getStrength() {
+        let v = 1.0;
+        try { v = parseFloat(localStorage.getItem(LS_STRENGTH)); } catch (e) {}
+        if (!isFinite(v) || v <= 0) v = 1.0;
+        return Math.max(0.3, Math.min(1.8, v));
+    }
+    function saveStrength(v) {
+        try { localStorage.setItem(LS_STRENGTH, String(v)); } catch (e) {}
+    }
+
+    let strengthPanel = null;
+    function initStrengthControl(art) {
+        if (strengthPanel || !art || !art.video) return;
+        const parent =
+            (art.template && (art.template.$player || art.template.$container)) ||
+            art.video.parentElement;
+        if (!parent) return;
+
+        const cur = getStrength();
+        strengthPanel = document.createElement('div');
+        strengthPanel.className = 'lt-strength-panel';
+        strengthPanel.style.display = 'none';
+        strengthPanel.innerHTML =
+            '<div class="lt-sp-label">增强强度 <span class="lt-sp-val">' + cur.toFixed(2) + '</span></div>' +
+            '<input class="lt-sp-range" type="range" min="0.3" max="1.8" step="0.05" value="' + cur + '">' +
+            '<div class="lt-sp-hint">对 Anime4K / 超分 生效</div>';
+        parent.appendChild(strengthPanel);
+
+        const range = strengthPanel.querySelector('.lt-sp-range');
+        const val = strengthPanel.querySelector('.lt-sp-val');
+        range.addEventListener('input', () => {
+            const v = parseFloat(range.value);
+            val.textContent = v.toFixed(2);
+            saveStrength(v);
+            if (global.Anime4K) global.Anime4K.setStrength(v);
+        });
+        // 防止滑块上的手势冒泡到播放器（快进/暂停）
+        ['click', 'mousedown', 'touchstart', 'dblclick'].forEach((ev) =>
+            strengthPanel.addEventListener(ev, (e) => e.stopPropagation()));
+
+        // 控制栏按钮：切换面板显隐
+        if (art.controls && typeof art.controls.add === 'function') {
+            try {
+                art.controls.add({
+                    name: 'lt-strength',
+                    position: 'right',
+                    tooltip: '增强强度',
+                    html: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
+                    click: function () {
+                        strengthPanel.style.display = strengthPanel.style.display === 'none' ? 'block' : 'none';
+                    },
+                });
+            } catch (e) { /* 控件不可用则仅保留面板 API */ }
+        }
+    }
 
     // 由 hls.levels 构造画质档位标签
     function levelLabel(level, index) {

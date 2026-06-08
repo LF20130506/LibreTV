@@ -18,12 +18,17 @@
         return '';
     }
 
-    function currentTitle() {
+    function baseTitle() {
         const t = (document.getElementById('videoTitle') || {}).textContent || '视频';
+        return t.replace(/[\\/:*?"<>|]+/g, '_').slice(0, 80);
+    }
+    function episodeFilename(idx0) {
+        return `${baseTitle()}_第${(idx0 | 0) + 1}集`;
+    }
+    function currentTitle() {
         let idx = 0;
-        try { idx = (currentEpisodeIndex | 0) + 1; } catch (e) { idx = 1; }
-        const name = `${t}_第${idx}集`.replace(/[\\/:*?"<>|]+/g, '_').slice(0, 80);
-        return name;
+        try { idx = currentEpisodeIndex | 0; } catch (e) { idx = 0; }
+        return episodeFilename(idx);
     }
 
     // uri -> 原始绝对地址（处理已被代理重写的 /proxy/、绝对、相对三种情况）
@@ -127,6 +132,66 @@
         ui = null;
     }
 
+    // 下载单集并保存为 filename.ts；进度通过 setProgress 显示
+    async function downloadOne(m3u8, filename, signal) {
+        // 1) 取播放列表（可能是 master）
+        let baseAbs = m3u8;
+        let text = await fetchText(baseAbs, signal);
+        if (text.includes('#EXT-X-STREAM-INF')) {
+            const lines = text.split('\n').map((l) => l.trim());
+            let best = '', bw = -1;
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].startsWith('#EXT-X-STREAM-INF')) {
+                    const b = parseInt((lines[i].match(/BANDWIDTH=(\d+)/) || [])[1] || '0', 10);
+                    for (let j = i + 1; j < lines.length; j++) {
+                        if (lines[j] && !lines[j].startsWith('#')) {
+                            if (b >= bw) { bw = b; best = lines[j]; }
+                            break;
+                        }
+                    }
+                }
+            }
+            if (best) { baseAbs = toOriginalAbs(best, baseAbs); text = await fetchText(baseAbs, signal); }
+        }
+
+        // 2) 解析媒体列表
+        const { segments, key, mapAbs, mediaSeq } = parseMedia(text, baseAbs);
+        if (!segments.length) throw new Error('未解析到任何分片');
+        if (key && key.method !== 'AES-128') throw new Error(`暂不支持的加密方式：${key.method}`);
+
+        // 3) 准备解密
+        let cryptoKey = null, explicitIv = null;
+        if (key) {
+            const keyBuf = await fetchBuffer(key.uri, signal);
+            cryptoKey = await crypto.subtle.importKey('raw', keyBuf, { name: 'AES-CBC' }, false, ['decrypt']);
+            if (key.ivHex) explicitIv = hexToBytes(key.ivHex);
+        }
+
+        // 4) 逐分片下载（含 init 段）
+        const parts = [];
+        if (mapAbs) parts.push(new Uint8Array(await fetchBuffer(mapAbs, signal)));
+        const total = segments.length;
+        for (let i = 0; i < total; i++) {
+            if (signal.aborted) throw new Error('已取消');
+            let buf = await fetchBuffer(segments[i], signal);
+            if (cryptoKey) {
+                const iv = explicitIv || seqToIv(mediaSeq + i);
+                buf = (await decryptSeg(buf, cryptoKey, iv)).buffer;
+            }
+            parts.push(new Uint8Array(buf));
+            setProgress(i + 1, total);
+        }
+
+        // 5) 合并并触发下载
+        const blob = new Blob(parts, { type: 'video/mp2t' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename + '.ts';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    }
+
     let busy = false;
     async function start() {
         if (busy) return;
@@ -142,70 +207,7 @@
         const signal = aborter.signal;
         showProgress();
         try {
-            // 1) 取播放列表（可能是 master）
-            let baseAbs = m3u8;
-            let text = await fetchText(baseAbs, signal);
-            if (text.includes('#EXT-X-STREAM-INF')) {
-                // master：选最高带宽变体
-                const lines = text.split('\n').map((l) => l.trim());
-                let best = '', bw = -1;
-                for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].startsWith('#EXT-X-STREAM-INF')) {
-                        const b = parseInt((lines[i].match(/BANDWIDTH=(\d+)/) || [])[1] || '0', 10);
-                        for (let j = i + 1; j < lines.length; j++) {
-                            if (lines[j] && !lines[j].startsWith('#')) {
-                                if (b >= bw) { bw = b; best = lines[j]; }
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (best) {
-                    baseAbs = toOriginalAbs(best, baseAbs);
-                    text = await fetchText(baseAbs, signal);
-                }
-            }
-
-            // 2) 解析媒体列表
-            const { segments, key, mapAbs, mediaSeq } = parseMedia(text, baseAbs);
-            if (!segments.length) throw new Error('未解析到任何分片');
-            if (key && key.method !== 'AES-128') {
-                throw new Error(`暂不支持的加密方式：${key.method}`);
-            }
-
-            // 3) 准备解密
-            let cryptoKey = null, explicitIv = null;
-            if (key) {
-                const keyBuf = await fetchBuffer(key.uri, signal);
-                cryptoKey = await crypto.subtle.importKey('raw', keyBuf, { name: 'AES-CBC' }, false, ['decrypt']);
-                if (key.ivHex) explicitIv = hexToBytes(key.ivHex);
-            }
-
-            // 4) 逐分片下载（含 init 段）
-            const parts = [];
-            if (mapAbs) parts.push(new Uint8Array(await fetchBuffer(mapAbs, signal)));
-
-            const total = segments.length;
-            for (let i = 0; i < total; i++) {
-                if (signal.aborted) throw new Error('已取消');
-                let buf = await fetchBuffer(segments[i], signal);
-                if (cryptoKey) {
-                    const iv = explicitIv || seqToIv(mediaSeq + i);
-                    buf = (await decryptSeg(buf, cryptoKey, iv)).buffer;
-                }
-                parts.push(new Uint8Array(buf));
-                setProgress(i + 1, total);
-            }
-
-            // 5) 合并并触发下载
-            if (ui) ui.title.textContent = '合并并保存…';
-            const blob = new Blob(parts, { type: 'video/mp2t' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = currentTitle() + '.ts';
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+            await downloadOne(m3u8, currentTitle(), signal);
             global.showToast && global.showToast('下载完成', 'success');
         } catch (e) {
             if (!signal.aborted) {
@@ -215,27 +217,75 @@
                 global.showToast && global.showToast('已取消下载', 'info');
             }
         } finally {
-            busy = false;
-            aborter = null;
-            closeProgress();
+            busy = false; aborter = null; closeProgress();
         }
     }
 
-    // 在 ArtPlayer 控制栏添加下载按钮
+    // 整季：逐集顺序下载，每集一个 .ts 文件
+    async function startSeason() {
+        if (busy) return;
+        let list = [];
+        try { list = Array.isArray(currentEpisodes) ? currentEpisodes.slice() : []; } catch (e) {}
+        list = list.filter((u) => /^https?:\/\//i.test(u));
+        if (!list.length) {
+            global.showToast && global.showToast('未找到可下载的剧集列表', 'error');
+            return;
+        }
+        if (!global.confirm(`将顺序下载整季共 ${list.length} 集，每集一个文件。浏览器可能弹出多文件下载许可，且耗时较长。是否继续？`)) return;
+
+        busy = true;
+        aborter = new AbortController();
+        const signal = aborter.signal;
+        showProgress();
+        let ok = 0, fail = 0;
+        try {
+            for (let i = 0; i < list.length; i++) {
+                if (signal.aborted) break;
+                if (ui) ui.title.textContent = `下载整季 第 ${i + 1}/${list.length} 集`;
+                try {
+                    await downloadOne(list[i], episodeFilename(i), signal);
+                    ok++;
+                } catch (e) {
+                    if (signal.aborted) break;
+                    console.warn('[Downloader] 第' + (i + 1) + '集失败:', e);
+                    fail++;
+                }
+            }
+            global.showToast && global.showToast(`整季下载结束：成功 ${ok} 集，失败 ${fail} 集`, fail ? 'warning' : 'success');
+        } finally {
+            busy = false; aborter = null; closeProgress();
+        }
+    }
+
+    // 在 ArtPlayer 控制栏添加下载按钮（下拉：本集 / 整季）
     function setup(art) {
         if (!art || !art.controls || typeof art.controls.add !== 'function') return;
+        const icon = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
         try {
             art.controls.add({
                 name: 'lt-download',
                 position: 'right',
-                tooltip: '下载本集',
-                html: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
-                click: function () { start(); },
+                html: icon,
+                tooltip: '下载',
+                selector: [
+                    { html: '下载本集', value: 'one' },
+                    { html: '下载整季', value: 'season' },
+                ],
+                onSelect: function (item) {
+                    if (item.value === 'season') startSeason(); else start();
+                    return icon; // 控件保持图标
+                },
             });
         } catch (e) {
-            console.warn('[Downloader] 添加控件失败:', e && e.message);
+            // 退化为单击下载本集
+            try {
+                art.controls.add({
+                    name: 'lt-download', position: 'right', tooltip: '下载本集',
+                    html: icon, click: function () { start(); },
+                });
+            } catch (e2) { console.warn('[Downloader] 添加控件失败:', e2 && e2.message); }
         }
     }
 
-    global.LTDownloader = { setup, start };
+    global.LTDownloader = { setup, start, startSeason };
 })(window);

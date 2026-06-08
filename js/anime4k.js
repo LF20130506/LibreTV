@@ -90,6 +90,13 @@
     let resizeObs = null;
     let strengthMult = 1.0; // 强度微调倍率（用户滑块）
     let outputHeight = 0, outputWidth = 0;
+    let targetSetting = 'auto'; // 'auto'(<1440→1440) | 0(源) | 数字(目标高度)
+
+    /** 设置输出分辨率目标：'auto' | 0(源画质) | 具体高度(如 1440/2160) */
+    function setTarget(t) {
+        if (t === 'auto') targetSetting = 'auto';
+        else { const n = parseInt(t, 10) || 0; targetSetting = n > 0 ? Math.min(4320, n) : 0; }
+    }
 
     /** 设置强度倍率（0.3~1.8），实时生效 */
     function setStrength(mult) {
@@ -151,11 +158,14 @@
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     }
 
-    // 计算增强输出尺寸：低于 1440p 的源上采样到 1440p（真正增加输出像素），
-    // 已达到/超过 1440p 的源保持原样（不降采样）。
+    // 计算增强输出尺寸。target='auto' 时低于 1440p 的源上采样到 1440p；
+    // target=0 用源画质；target=数字 用指定高度（可上/降采样，由用户在「画质」中选择）。
     function computeOutput(sw, sh) {
         if (!sw || !sh) return [0, 0];
-        let th = sh < 1440 ? 1440 : sh;
+        let th;
+        if (targetSetting === 'auto') th = sh < 1440 ? 1440 : sh;
+        else if (targetSetting === 0) th = sh;
+        else th = Math.max(144, targetSetting);
         const scale = th / sh;
         return [Math.max(1, Math.round(sw * scale)), th];
     }
@@ -264,5 +274,5 @@
 
     function isRunning() { return running; }
 
-    global.Anime4K = { enable, disable, isRunning, setStrength, getOutputHeight, getOutputWidth };
+    global.Anime4K = { enable, disable, isRunning, setStrength, setTarget, getOutputHeight, getOutputWidth };
 })(window);

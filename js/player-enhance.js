@@ -222,59 +222,80 @@
         badgeEl.classList.toggle('is-enhanced', enhanced);
     }
 
-    // 初始化/更新「画质」设置项（每次 MANIFEST_PARSED 调用）
-    function updateQuality(art, hls) {
-        if (!art || !hls || !Array.isArray(hls.levels)) return;
-        const levels = hls.levels;
-        // 单档位无需选择
-        if (levels.length <= 1) return;
+    // 选高分辨率时确保 WebGL 增强在运行（否则上采样无意义）；默认切到「超分(实拍)」
+    function ensureWebGL(art) {
+        const cur = getSavedEnhance();
+        if (presetByValue(cur).anime4k) return; // 已是 WebGL 模式
+        applyEnhance(art, 'sr');
+        saveEnhance('sr');
+        try {
+            art.setting.update({
+                name: 'enhance',
+                tooltip: presetByValue('sr').html,
+                selector: ENHANCE_PRESETS.map((p) => ({ html: p.html, value: p.value, default: p.value === 'sr' })),
+            });
+        } catch (e) {}
+    }
 
-        // 自动 + 各档位（按分辨率从高到低）
-        const items = levels
-            .map((lv, i) => ({ html: levelLabel(lv, i), value: i, _h: lv.height || 0 }))
-            .sort((a, b) => b._h - a._h);
+    // 初始化/更新「画质」设置项（每次 MANIFEST_PARSED 调用）。
+    // 始终存在：以「输出分辨率」为主（自动/源/1440P/2160P，驱动上采样），
+    // 当存在真实多码率档时再附上码率档供切换。
+    function updateQuality(art, hls) {
+        if (!art || !art.setting) return;
+        const sh = (art.video && art.video.videoHeight) || 0;
+        const srcLabel = sh ? qualityLabel(sh) : '';
+
         const selector = [
-            { html: '自动', value: -1, default: hls.currentLevel === -1 },
-            ...items.map((it) => ({ html: it.html, value: it.value, default: false })),
+            { html: '自动(增强到1440P)', value: 'auto', default: true },
+            { html: '源画质' + (srcLabel ? ` (${srcLabel})` : ''), value: 'src' },
+            { html: '1440P 增强', value: 'h:1440' },
+            { html: '2160P 增强', value: 'h:2160' },
         ];
+
+        // 真实码率档（如有）
+        if (hls && Array.isArray(hls.levels) && hls.levels.length > 1) {
+            hls.levels
+                .map((lv, i) => ({ h: lv.height || 0, i }))
+                .sort((a, b) => b.h - a.h)
+                .forEach((it) => selector.push({
+                    html: '码率 ' + (it.h ? qualityLabel(it.h) : '档' + (it.i + 1)),
+                    value: 'lvl:' + it.i,
+                }));
+        }
 
         const setting = {
             name: 'quality',
             html: '画质',
-            tooltip: hls.currentLevel === -1 ? '自动' : levelLabel(levels[hls.currentLevel] || {}, hls.currentLevel),
+            tooltip: '自动',
             selector,
             onSelect: function (item) {
-                hls.currentLevel = item.value; // -1 = 自动 ABR
+                const v = String(item.value);
+                if (v === 'auto') {
+                    ensureWebGL(art);
+                    global.Anime4K && global.Anime4K.setTarget && global.Anime4K.setTarget('auto');
+                } else if (v === 'src') {
+                    global.Anime4K && global.Anime4K.setTarget && global.Anime4K.setTarget(0);
+                } else if (v.startsWith('h:')) {
+                    ensureWebGL(art);
+                    global.Anime4K && global.Anime4K.setTarget && global.Anime4K.setTarget(parseInt(v.slice(2), 10));
+                } else if (v.startsWith('lvl:') && hls) {
+                    hls.currentLevel = parseInt(v.slice(4), 10);
+                }
+                [120, 400, 900].forEach((t) => setTimeout(() => updateQualityBadge(art), t));
                 return item.html;
             },
         };
 
         try {
             if (qualityAdded) {
-                if (typeof art.setting.update === 'function') {
-                    art.setting.update(setting);
-                } else {
-                    // 兼容无 update 的构建：先移除再添加
-                    try { art.setting.remove && art.setting.remove('quality'); } catch (e) {}
-                    art.setting.add(setting);
-                }
+                if (typeof art.setting.update === 'function') art.setting.update(setting);
+                else { try { art.setting.remove && art.setting.remove('quality'); } catch (e) {} art.setting.add(setting); }
             } else {
                 art.setting.add(setting);
                 qualityAdded = true;
             }
         } catch (e) {
             console.warn('[PlayerEnhance] 画质设置项注册失败:', e && e.message);
-        }
-
-        // 自动模式下，实际切换档位时更新 tooltip 显示当前分辨率
-        if (!levelSwitchBound && global.Hls && hls.on) {
-            hls.on(global.Hls.Events.LEVEL_SWITCHED, function (_e, data) {
-                const lv = levels[data.level];
-                if (!lv) return;
-                const label = hls.autoLevelEnabled ? `自动 (${levelLabel(lv, data.level)})` : levelLabel(lv, data.level);
-                try { art.setting.update({ name: 'quality', tooltip: label }); } catch (e) {}
-            });
-            levelSwitchBound = true;
         }
     }
     let qualityAdded = false;

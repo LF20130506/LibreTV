@@ -43,15 +43,25 @@
         return PROXY + encodeURIComponent(absUrl);
     }
 
+    // 直连优先：与播放器一致直接取源站（CORS 由源站提供，能播即能下）；
+    // 失败再回退代理。注意：边缘代理可能按文本处理而损坏二进制，故二进制必须直连优先。
     async function fetchText(absUrl, signal) {
-        const res = await fetch(proxied(absUrl), { signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.text();
+        try {
+            const r = await fetch(absUrl, { signal, mode: 'cors' });
+            if (r.ok) return await r.text();
+        } catch (e) { /* 回退代理 */ }
+        const r2 = await fetch(proxied(absUrl), { signal });
+        if (!r2.ok) throw new Error(`播放列表获取失败(HTTP ${r2.status})`);
+        return r2.text();
     }
     async function fetchBuffer(absUrl, signal) {
-        const res = await fetch(proxied(absUrl), { signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.arrayBuffer();
+        try {
+            const r = await fetch(absUrl, { signal, mode: 'cors' });
+            if (r.ok) return await r.arrayBuffer();
+        } catch (e) { /* 回退代理 */ }
+        const r2 = await fetch(proxied(absUrl), { signal });
+        if (!r2.ok) throw new Error(`分片获取失败(HTTP ${r2.status})`);
+        return r2.arrayBuffer();
     }
 
     // 解析媒体播放列表，返回 { segments:[abs], key, mapAbs, mediaSeq }
@@ -162,8 +172,18 @@
         // 3) 准备解密
         let cryptoKey = null, explicitIv = null;
         if (key) {
+            if (!(global.crypto && global.crypto.subtle)) {
+                throw new Error('当前环境不支持解密(需 HTTPS)，无法下载加密流');
+            }
             const keyBuf = await fetchBuffer(key.uri, signal);
-            cryptoKey = await crypto.subtle.importKey('raw', keyBuf, { name: 'AES-CBC' }, false, ['decrypt']);
+            if (keyBuf.byteLength !== 16) {
+                throw new Error(`密钥长度异常(${keyBuf.byteLength}字节)，疑似被代理损坏`);
+            }
+            try {
+                cryptoKey = await crypto.subtle.importKey('raw', keyBuf, { name: 'AES-CBC' }, false, ['decrypt']);
+            } catch (e) {
+                throw new Error('密钥导入失败：' + (e && e.message || e));
+            }
             if (key.ivHex) explicitIv = hexToBytes(key.ivHex);
         }
 

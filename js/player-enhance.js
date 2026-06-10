@@ -45,9 +45,10 @@
             if (global.Anime4K) ok = global.Anime4K.enable(art, preset.anime4k);
             // WebGL 启用失败则回退到 CSS「标准」档，保证仍有增强效果
             if (!ok) {
-                art.video.style.filter = presetByValue('standard').filter;
+                // WebGL 不可用时，绝不回退到会产生白边的 SVG 锐化——直接关闭增强
+                art.video.style.filter = '';
                 if (typeof global.showToast === 'function') {
-                    global.showToast('当前环境不支持 Anime4K，已回退为普通增强', 'warning');
+                    global.showToast('当前环境不支持 Anime4K(需 WebGL2)，已关闭增强', 'warning');
                 }
             }
         } else {
@@ -205,21 +206,24 @@
         const sh = art.video.videoHeight || 0;
         if (!sh) { badgeEl.style.display = 'none'; return; }
 
-        // 若 Anime4K/超分 正在运行且实际提升了输出分辨率，则显示增强后画质
-        let h = sh, w = sw, enhanced = false;
+        // Anime4K/超分 正在运行：显示 ✨ 标记（即使分辨率未提升也表明增强生效）
+        let h = sh, w = sw, enhanced = false, running = false;
         if (global.Anime4K && global.Anime4K.isRunning && global.Anime4K.isRunning()) {
+            running = true;
             const oh = global.Anime4K.getOutputHeight ? global.Anime4K.getOutputHeight() : 0;
             const ow = global.Anime4K.getOutputWidth ? global.Anime4K.getOutputWidth() : 0;
             if (oh > sh) { h = oh; w = ow || sw; enhanced = true; }
         }
 
-        badgeEl.textContent = (enhanced ? '✨' : '') + qualityLabel(h);
+        badgeEl.textContent = (running ? '✨' : '') + qualityLabel(h);
         badgeEl.title = enhanced
-            ? `AI 增强：源 ${sw}×${sh} → 输出 ${w}×${h}`
-            : `源分辨率 ${sw}×${sh}`;
+            ? `增强生效：源 ${sw}×${sh} → 输出 ${w}×${h}`
+            : running
+                ? `增强生效(锐化)：${sw}×${sh}`
+                : `源分辨率 ${sw}×${sh}`;
         badgeEl.style.display = 'block';
         badgeEl.classList.toggle('is-uhd', h >= 2160);
-        badgeEl.classList.toggle('is-enhanced', enhanced);
+        badgeEl.classList.toggle('is-enhanced', running);
     }
 
     // 选高分辨率时确保 WebGL 增强在运行（否则上采样无意义）；默认切到「超分(实拍)」

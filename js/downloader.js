@@ -115,9 +115,9 @@
         if (muxLoading) return muxLoading;
         muxLoading = new Promise((resolve, reject) => {
             const s = document.createElement('script');
-            s.src = 'libs/mux.min.js';
+            s.src = '/libs/mux.min.js'; // 绝对路径，兼容 /player 这类无扩展名 clean URL
             s.onload = () => global.muxjs ? resolve(global.muxjs) : reject(new Error('mux.js 未就绪'));
-            s.onerror = () => reject(new Error('转封装库加载失败'));
+            s.onerror = () => reject(new Error('转封装库加载失败(可能未部署或被缓存)'));
             document.head.appendChild(s);
         });
         return muxLoading;
@@ -230,8 +230,8 @@
         }
 
         // —— 情况 B：TS 分片 → 用 mux.js 无损转封装为 MP4（不重新编码）——
-        let muxjs = null;
-        try { muxjs = await loadMux(); } catch (e) { muxjs = null; }
+        let muxjs = null, muxErr = '';
+        try { muxjs = await loadMux(); } catch (e) { muxjs = null; muxErr = (e && e.message) || '加载失败'; }
 
         if (muxjs && muxjs.mp4 && muxjs.mp4.Transmuxer) {
             const transmuxer = new muxjs.mp4.Transmuxer({ keepOriginalTimestamps: true });
@@ -256,7 +256,8 @@
                 saveBlob([initSeg, ...dataParts], 'video/mp4', filename + '.mp4');
                 return;
             }
-            // 转封装无输出（少见，可能不是标准 H.264/AAC）→ 回退 TS
+            muxErr = '转封装无输出(可能非标准 H.264/AAC)';
+            // 转封装无输出 → 回退 TS
         }
 
         // —— 回退：转封装库不可用或无输出 → 仍保存为 TS ——
@@ -269,7 +270,8 @@
             setProgress(i + 1, total);
         }
         saveBlob(parts, 'video/mp2t', filename + '.ts');
-        if (global.showToast) global.showToast('已保存为 TS（无法转 MP4，可用 VLC 播放）', 'warning');
+        console.warn('[Downloader] 回退 TS 原因:', muxErr || '未知');
+        if (global.showToast) global.showToast(`已保存为 TS（${muxErr || '无法转 MP4'}）`, 'warning');
     }
 
     let busy = false;

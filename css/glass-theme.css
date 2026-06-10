@@ -68,8 +68,8 @@ body.page-bg { color: var(--text-color); }
 .page-bg .text-gray-300 { color: #3c4d55 !important; }
 .page-bg .text-gray-400 { color: #5f7682 !important; }
 .page-bg .text-gray-500 { color: #7b8d97 !important; }
-/* 彩色按钮上的文字保持白色 */
-.page-bg .bg-gradient-to-r, .page-bg .bg-gradient-to-r *,
+/* 彩色按钮上的文字保持白色（仅限按钮，勿伤海报上的渐变遮罩）*/
+.page-bg button.bg-gradient-to-r, .page-bg button.bg-gradient-to-r *,
 .page-bg .search-button, .page-bg .search-button * { color: #fff !important; }
 
 /* 输入框：白玻璃 + 深色文字 */
@@ -286,18 +286,19 @@ body.page-bg { color: var(--text-color); }
 }
 
 /* ============================================================
- * 渐变按钮 —— 玻璃光泽
+ * 渐变按钮 —— 自然海蓝（仅作用于 <button>，避免命中海报上的
+ * bg-gradient-to-r from-black/30 遮罩层导致图层错乱）
  * ========================================================== */
-.bg-gradient-to-r {
-    /* 覆盖 Tailwind 的 indigo→purple→pink，改为自然青瓷渐变 */
+.page-bg button.bg-gradient-to-r {
+    /* 覆盖 Tailwind 的 indigo→purple→pink，改为海蓝渐变 */
     background-image: linear-gradient(135deg, #2e9ec2, #5bbcd9) !important;
     border-radius: var(--radius-md) !important;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.30),
+    box-shadow: 0 6px 16px rgba(40, 95, 120, 0.22),
                 inset 0 1px 0 var(--glass-highlight);
     position: relative;
     overflow: hidden;
 }
-.bg-gradient-to-r:hover {
+.page-bg button.bg-gradient-to-r:hover {
     background-image: linear-gradient(135deg, #3aacd0, #6bc8e2) !important;
 }
 

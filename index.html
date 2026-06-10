@@ -17,13 +17,19 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/glass-theme.css">
+    <script>try{var t=localStorage.getItem('ltTheme');document.documentElement.setAttribute('data-theme', t==='contrast'?'contrast':'seaside');}catch(e){document.documentElement.setAttribute('data-theme','seaside');}</script>
 </head>
 <body class="page-bg text-white">
     <!-- 将历史记录按钮移到左上角，并缩小尺寸 -->
-    <div class="fixed top-4 left-4 z-10">
+    <div class="fixed top-4 left-4 z-10 flex gap-2">
         <button onclick="toggleHistory(event)" class="bg-[#222] hover:bg-[#333] border border-[#333] hover:border-white rounded-lg px-3 py-1.5 transition-colors" aria-label="观看历史">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </button>
+        <button id="themeToggleBtn" onclick="toggleTheme()" class="bg-[#222] hover:bg-[#333] border border-[#333] hover:border-white rounded-lg px-3 py-1.5 transition-colors" aria-label="切换主题" title="切换主题">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
             </svg>
         </button>
     </div>
@@ -426,6 +432,7 @@
         window._jsSha256 = window.sha256;
     </script>
     <script src="js/config.js"></script>
+    <script src="js/theme.js"></script>
     <script src="js/utils/security.js"></script>
     <script src="js/watch-providers.js"></script>
     <script src="js/ui.js"></script>

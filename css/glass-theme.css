@@ -7,31 +7,31 @@
  */
 
 :root {
-    /* —— 白色海景房配色：白底 + 海天蓝 + 沙滩米 —— */
-    --primary-color: #2e9ec2;        /* 海蓝（主色）*/
-    --primary-light: #5bbcd9;        /* 浅海蓝 */
-    --secondary-color: #eef7f9;      /* 近白浅蓝 */
-    --accent-color: #e0b078;         /* 沙滩米（少量点缀）*/
-    --text-color: #27393f;           /* 深海灰（正文）*/
-    --text-muted: #5f7682;           /* 海雾灰次级文本 */
-    --border-color: rgba(45, 95, 120, 0.16);
-    --page-gradient-start: #f7fcfd;  /* 顶部近白 */
-    --page-gradient-end: #dceef2;    /* 底部浅海蓝 */
-    --card-gradient-start: #ffffff;
-    --card-gradient-end: #eef7fa;
-    --card-accent: rgba(46, 158, 194, 0.10);
-    --card-hover-border: rgba(46, 158, 194, 0.45);
+    /* —— 休闲海滩🏖️配色：暖象牙白 + 热带海水青 + 暖阳沙 —— */
+    --primary-color: #1fb3c4;        /* 热带海水青（主色）*/
+    --primary-light: #5fcdd9;        /* 浅海泡沫青 */
+    --secondary-color: #fdfaf3;      /* 暖象牙白 */
+    --accent-color: #f2a65a;         /* 暖阳沙（点缀）*/
+    --text-color: #35403e;           /* 暖深灰（正文）*/
+    --text-muted: #6b7b78;           /* 海雾暖灰 */
+    --border-color: rgba(60, 110, 110, 0.16);
+    --page-gradient-start: #fdfcf6;  /* 顶部暖象牙 */
+    --page-gradient-end: #d6eef0;    /* 底部浅海蓝绿 */
+    --card-gradient-start: #fffefb;
+    --card-gradient-end: #ecf8f7;
+    --card-accent: rgba(31, 179, 196, 0.10);
+    --card-hover-border: rgba(31, 179, 196, 0.45);
 
-    /* —— 液态玻璃变量（白玻璃）—— */
-    --glass-bg: rgba(255, 255, 255, 0.55);       /* 玻璃主体（白半透明）*/
-    --glass-bg-strong: rgba(255, 255, 255, 0.74); /* 更实的玻璃（弹窗/面板）*/
-    --glass-bg-soft: rgba(232, 244, 247, 0.62);  /* 极淡海蓝玻璃（内嵌块）*/
-    --glass-border: rgba(45, 95, 120, 0.16);     /* 可见的浅色描边 */
-    --glass-border-strong: rgba(46, 158, 194, 0.55);
+    /* —— 液态玻璃变量（暖白玻璃）—— */
+    --glass-bg: rgba(255, 254, 250, 0.58);       /* 玻璃主体（暖白半透明）*/
+    --glass-bg-strong: rgba(255, 254, 250, 0.80); /* 更实的玻璃（弹窗/面板）*/
+    --glass-bg-soft: rgba(231, 245, 244, 0.62);  /* 浅海泡沫（内嵌块）*/
+    --glass-border: rgba(60, 110, 110, 0.16);    /* 可见的浅色描边 */
+    --glass-border-strong: rgba(31, 179, 196, 0.55);
     --glass-highlight: rgba(255, 255, 255, 0.85); /* 顶部高光 */
     --glass-blur: 18px;
     --glass-blur-strong: 28px;
-    --glass-shadow: 0 8px 28px rgba(40, 95, 120, 0.14), inset 0 1px 0 var(--glass-highlight);
+    --glass-shadow: 0 8px 26px rgba(60, 120, 115, 0.13), inset 0 1px 0 var(--glass-highlight);
 
     /* —— 统一圆角令牌 —— */
     --radius-sm: 10px;
@@ -53,8 +53,8 @@
     pointer-events: none;
     z-index: -1;
     background:
-        radial-gradient(90vw 55vw at 50% 118%, rgba(46, 158, 194, 0.16), transparent 62%),  /* 底部海平面 */
-        radial-gradient(48vw 48vw at 92% -12%, rgba(224, 176, 120, 0.12), transparent 58%);  /* 右上暖阳 */
+        radial-gradient(95vw 55vw at 50% 120%, rgba(31, 179, 196, 0.18), transparent 64%),   /* 底部海水 */
+        radial-gradient(52vw 52vw at 88% -12%, rgba(242, 166, 90, 0.16), transparent 60%);   /* 右上暖阳 */
 }
 
 /* ============================================================
@@ -93,7 +93,7 @@ body.page-bg { color: var(--text-color); }
 
 /* 浏览页弹窗遮罩：海雾蓝而非纯黑 */
 .page-bg #modal, .page-bg #passwordModal {
-    background: rgba(190, 218, 226, 0.45) !important;
+    background: rgba(206, 230, 226, 0.45) !important;
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
 }
@@ -261,7 +261,7 @@ body.page-bg { color: var(--text-color); }
     border: 1px solid var(--glass-border) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
     backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-    box-shadow: 0 24px 56px rgba(40, 95, 120, 0.30),
+    box-shadow: 0 24px 56px rgba(60, 120, 115, 0.28),
                 inset 0 1px 0 var(--glass-highlight) !important;
 }
 /* 弹窗遮罩：海雾蓝（亮色主题，见上方统一定义）*/
@@ -291,15 +291,15 @@ body.page-bg { color: var(--text-color); }
  * ========================================================== */
 .page-bg button.bg-gradient-to-r {
     /* 覆盖 Tailwind 的 indigo→purple→pink，改为海蓝渐变 */
-    background-image: linear-gradient(135deg, #2e9ec2, #5bbcd9) !important;
+    background-image: linear-gradient(135deg, #1fb3c4, #5fcdd9) !important;
     border-radius: var(--radius-md) !important;
-    box-shadow: 0 6px 16px rgba(40, 95, 120, 0.22),
+    box-shadow: 0 6px 16px rgba(60, 120, 115, 0.20),
                 inset 0 1px 0 var(--glass-highlight);
     position: relative;
     overflow: hidden;
 }
 .page-bg button.bg-gradient-to-r:hover {
-    background-image: linear-gradient(135deg, #3aacd0, #6bc8e2) !important;
+    background-image: linear-gradient(135deg, #2cc2d2, #74dbe6) !important;
 }
 
 /* 输入框玻璃化（浏览页）*/
@@ -404,7 +404,7 @@ body.page-bg { color: var(--text-color); }
     border: 1px solid var(--glass-border-strong);
     transition: all 0.2s ease;
 }
-.wp-link:hover { background: rgba(46, 158, 194, 0.14); }
+.wp-link:hover { background: rgba(31, 179, 196, 0.14); }
 .wp-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .wp-chip {
     display: inline-flex;
@@ -444,15 +444,15 @@ body.page-bg { color: var(--text-color); }
 /* 增强态：柔和青瓷描边，区别于源画质 */
 .lt-quality-badge.is-enhanced {
     color: #e8f3f1;
-    border-color: rgba(46, 158, 194, 0.60);
-    background: linear-gradient(135deg, rgba(46, 158, 194, 0.42), rgba(91, 188, 217, 0.42));
+    border-color: rgba(31, 179, 196, 0.60);
+    background: linear-gradient(135deg, rgba(31, 179, 196, 0.42), rgba(91, 188, 217, 0.42));
 }
 /* 4K / 8K 用暖陶土点缀高亮 */
 .lt-quality-badge.is-uhd {
     color: #fff;
     border-color: var(--accent-color);
-    background: linear-gradient(135deg, rgba(224, 176, 120, 0.65), rgba(46, 158, 194, 0.55));
-    box-shadow: 0 2px 9px rgba(224, 176, 120, 0.30);
+    background: linear-gradient(135deg, rgba(242, 166, 90, 0.65), rgba(31, 179, 196, 0.55));
+    box-shadow: 0 2px 9px rgba(242, 166, 90, 0.30);
 }
 @media (max-width: 640px) {
     .lt-quality-badge { top: 6px; right: 6px; font-size: 0.66rem; padding: 1px 6px; }
@@ -468,7 +468,7 @@ body.page-bg { color: var(--text-color); }
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(190, 218, 226, 0.45);
+    background: rgba(206, 230, 226, 0.45);
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
 }
@@ -506,10 +506,10 @@ body.page-bg { color: var(--text-color); }
     color: #fff;
     border-radius: var(--radius-pill);
     border: 1px solid var(--glass-border-strong);
-    background: rgba(46, 158, 194, 0.14);
+    background: rgba(31, 179, 196, 0.14);
     transition: all 0.2s ease;
 }
-.lt-dl-cancel:hover { background: rgba(224, 176, 120, 0.20); border-color: var(--accent-color); }
+.lt-dl-cancel:hover { background: rgba(242, 166, 90, 0.20); border-color: var(--accent-color); }
 
 /* ============================================================
  * 增强强度滑块面板
@@ -539,4 +539,79 @@ body.page-bg { color: var(--text-color); }
 .lt-sp-hint { margin-top: 0.5rem; font-size: 0.68rem; color: var(--text-muted); }
 @media (max-width: 640px) {
     .lt-strength-panel { width: 168px; bottom: 56px; right: 8px; }
+}
+
+/* ============================================================
+ * 高对比度主题 (html[data-theme="contrast"])
+ * 纯黑底 + 纯白字 + 强黄/青强调 + 清晰描边 + 关闭毛玻璃，便于弱光/视障场景
+ * ========================================================== */
+html[data-theme="contrast"] {
+    --primary-color: #ffd60a;        /* 高对比黄（主交互）*/
+    --primary-light: #ffe34d;
+    --accent-color: #4fd0ff;         /* 高对比青 */
+    --text-color: #ffffff;
+    --text-muted: #e6e6e6;
+    --border-color: #ffffff;
+    --page-gradient-start: #000000;
+    --page-gradient-end: #000000;
+    --card-gradient-start: #000000;
+    --card-gradient-end: #000000;
+    --card-accent: rgba(255, 214, 10, 0.18);
+    --card-hover-border: #ffd60a;
+    --glass-bg: #0b0b0b;             /* 不透明，保证清晰 */
+    --glass-bg-strong: #000000;
+    --glass-bg-soft: #1c1c1c;
+    --glass-border: #8a8a8a;         /* 清晰可见描边 */
+    --glass-border-strong: #ffd60a;
+    --glass-highlight: rgba(255, 255, 255, 0);
+    --glass-blur: 0px;               /* 关闭毛玻璃 */
+    --glass-blur-strong: 0px;
+    --glass-shadow: 0 0 0 1px #6f6f6f; /* 用描边代替柔影，强分隔 */
+}
+
+/* 文字回到高对比白（覆盖海景主题的深色翻转）*/
+html[data-theme="contrast"] body.page-bg { color: #ffffff; }
+html[data-theme="contrast"] .page-bg .text-white { color: #ffffff !important; }
+html[data-theme="contrast"] .page-bg .text-gray-200,
+html[data-theme="contrast"] .page-bg .text-gray-300,
+html[data-theme="contrast"] .page-bg .text-gray-400,
+html[data-theme="contrast"] .page-bg .text-gray-500 { color: #e6e6e6 !important; }
+html[data-theme="contrast"] .page-bg .history-title,
+html[data-theme="contrast"] .page-bg .close-btn { color: #ffffff !important; }
+html[data-theme="contrast"] #modal .detail-value,
+html[data-theme="contrast"] #modal .detail-desc-content { color: #ffffff !important; }
+
+/* 纯黑背景，去掉海平面辉光 */
+html[data-theme="contrast"] .page-bg::before { background: none !important; }
+
+/* 弹窗遮罩改深黑 */
+html[data-theme="contrast"] .page-bg #modal,
+html[data-theme="contrast"] .page-bg #passwordModal {
+    background: rgba(0, 0, 0, 0.82) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+/* 渐变按钮：实心黄底黑字，最强对比 */
+html[data-theme="contrast"] .page-bg button.bg-gradient-to-r {
+    background-image: none !important;
+    background-color: #ffd60a !important;
+    box-shadow: 0 0 0 2px #ffd60a !important;
+}
+html[data-theme="contrast"] .page-bg button.bg-gradient-to-r,
+html[data-theme="contrast"] .page-bg button.bg-gradient-to-r * { color: #000 !important; }
+
+/* 搜索框两侧按钮：黄底黑字 */
+html[data-theme="contrast"] .page-bg .flex.items-stretch.shadow-lg .bg-white {
+    background: #ffd60a !important;
+    color: #000 !important;
+}
+html[data-theme="contrast"] .page-bg .flex.items-stretch.shadow-lg .text-black { color: #000 !important; }
+
+/* 清晰的键盘焦点轮廓 */
+html[data-theme="contrast"] .page-bg button:focus-visible,
+html[data-theme="contrast"] .page-bg a:focus-visible,
+html[data-theme="contrast"] .page-bg input:focus-visible {
+    outline: 3px solid #ffd60a !important;
+    outline-offset: 2px;
 }

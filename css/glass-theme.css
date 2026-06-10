@@ -7,31 +7,31 @@
  */
 
 :root {
-    /* —— 自然柔和配色：覆盖 styles.css 的赛博霓虹，改为中性炭灰 + 青瓷 + 暖陶土 —— */
-    --primary-color: #6fb0ab;        /* 柔和青瓷（主色）*/
-    --primary-light: #8ac6c1;        /* 浅青瓷 */
-    --secondary-color: #1b1e24;      /* 中性深炭 */
-    --accent-color: #d39a6a;         /* 暖陶土（少量点缀）*/
-    --text-color: #e7e9ec;           /* 柔白文本 */
-    --text-muted: #9aa3ad;           /* 中性灰次级文本 */
-    --border-color: rgba(255, 255, 255, 0.10);
-    --page-gradient-start: #181a1f;  /* 炭灰起始 */
-    --page-gradient-end: #1e2127;    /* 炭灰结束 */
-    --card-gradient-start: #20242b;
-    --card-gradient-end: #262b33;
-    --card-accent: rgba(111, 176, 171, 0.10);
-    --card-hover-border: rgba(111, 176, 171, 0.40);
+    /* —— 白色海景房配色：白底 + 海天蓝 + 沙滩米 —— */
+    --primary-color: #2e9ec2;        /* 海蓝（主色）*/
+    --primary-light: #5bbcd9;        /* 浅海蓝 */
+    --secondary-color: #eef7f9;      /* 近白浅蓝 */
+    --accent-color: #e0b078;         /* 沙滩米（少量点缀）*/
+    --text-color: #27393f;           /* 深海灰（正文）*/
+    --text-muted: #5f7682;           /* 海雾灰次级文本 */
+    --border-color: rgba(45, 95, 120, 0.16);
+    --page-gradient-start: #f7fcfd;  /* 顶部近白 */
+    --page-gradient-end: #dceef2;    /* 底部浅海蓝 */
+    --card-gradient-start: #ffffff;
+    --card-gradient-end: #eef7fa;
+    --card-accent: rgba(46, 158, 194, 0.10);
+    --card-hover-border: rgba(46, 158, 194, 0.45);
 
-    /* —— 液态玻璃变量（中性灰，去蓝调）—— */
-    --glass-bg: rgba(30, 33, 39, 0.55);          /* 玻璃主体（中性炭灰半透明）*/
-    --glass-bg-strong: rgba(23, 26, 31, 0.74);   /* 更实的玻璃（弹窗/面板）*/
-    --glass-bg-soft: rgba(255, 255, 255, 0.035); /* 极淡玻璃（内嵌块）*/
-    --glass-border: rgba(255, 255, 255, 0.10);   /* 玻璃描边 */
-    --glass-border-strong: rgba(111, 176, 171, 0.40);
-    --glass-highlight: rgba(255, 255, 255, 0.10); /* 顶部高光（已收敛）*/
+    /* —— 液态玻璃变量（白玻璃）—— */
+    --glass-bg: rgba(255, 255, 255, 0.55);       /* 玻璃主体（白半透明）*/
+    --glass-bg-strong: rgba(255, 255, 255, 0.74); /* 更实的玻璃（弹窗/面板）*/
+    --glass-bg-soft: rgba(232, 244, 247, 0.62);  /* 极淡海蓝玻璃（内嵌块）*/
+    --glass-border: rgba(45, 95, 120, 0.16);     /* 可见的浅色描边 */
+    --glass-border-strong: rgba(46, 158, 194, 0.55);
+    --glass-highlight: rgba(255, 255, 255, 0.85); /* 顶部高光 */
     --glass-blur: 18px;
     --glass-blur-strong: 28px;
-    --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.40), inset 0 1px 0 var(--glass-highlight);
+    --glass-shadow: 0 8px 28px rgba(40, 95, 120, 0.14), inset 0 1px 0 var(--glass-highlight);
 
     /* —— 统一圆角令牌 —— */
     --radius-sm: 10px;
@@ -41,10 +41,9 @@
     --radius-pill: 9999px;
 }
 
-/* 背景：极柔和的自然辉光，去掉霓虹点阵氛围 */
+/* 背景：白→浅海蓝渐变 + 海平面/暖阳辉光 */
 .page-bg {
     background-attachment: fixed;
-    /* 覆盖 styles.css 的赛博点阵，改为干净的自然渐变 */
     background-image: linear-gradient(180deg, var(--page-gradient-start), var(--page-gradient-end)) !important;
 }
 .page-bg::before {
@@ -52,28 +51,69 @@
     position: fixed;
     inset: 0;
     pointer-events: none;
-    z-index: -1;   /* 置于所有常规内容之后，不干扰面板/弹窗的 z-index 层级 */
+    z-index: -1;
     background:
-        radial-gradient(65vw 65vw at 15% -12%, rgba(111, 176, 171, 0.055), transparent 62%),
-        radial-gradient(55vw 55vw at 100% 0%, rgba(211, 154, 106, 0.035), transparent 58%);
+        radial-gradient(90vw 55vw at 50% 118%, rgba(46, 158, 194, 0.16), transparent 62%),  /* 底部海平面 */
+        radial-gradient(48vw 48vw at 92% -12%, rgba(224, 176, 120, 0.12), transparent 58%);  /* 右上暖阳 */
+}
+
+/* ============================================================
+ * 亮色主题：把「深底白字」翻转为白底深字（用 !important 压过 Tailwind）。
+ * 仅作用于带 .page-bg 的浏览页；播放页(player.html, 无 .page-bg)保持深色，
+ * 利于观影且不破坏其原有白字。
+ * ========================================================== */
+body.page-bg { color: var(--text-color); }
+.page-bg .text-white { color: #26373f !important; }
+.page-bg .text-gray-200 { color: #2b3a42 !important; }
+.page-bg .text-gray-300 { color: #3c4d55 !important; }
+.page-bg .text-gray-400 { color: #5f7682 !important; }
+.page-bg .text-gray-500 { color: #7b8d97 !important; }
+/* 彩色按钮上的文字保持白色 */
+.page-bg .bg-gradient-to-r, .page-bg .bg-gradient-to-r *,
+.page-bg .search-button, .page-bg .search-button * { color: #fff !important; }
+
+/* 输入框：白玻璃 + 深色文字 */
+.page-bg input, .page-bg textarea, .page-bg select { color: var(--text-color) !important; }
+.page-bg input::placeholder, .page-bg textarea::placeholder { color: var(--text-muted) !important; }
+
+/* 搜索框两侧的白底按钮改为海蓝 */
+.page-bg .flex.items-stretch.shadow-lg .bg-white {
+    background: var(--primary-color) !important;
+    color: #fff !important;
+}
+.page-bg .flex.items-stretch.shadow-lg .bg-white:hover { background: var(--primary-light) !important; }
+.page-bg .flex.items-stretch.shadow-lg .text-black { color: #fff !important; }
+
+/* 关闭按钮 / 弹窗详情文字 改深色 */
+.page-bg .close-btn { color: var(--text-color) !important; }
+#modal .detail-value,
+#modal .detail-desc-content { color: var(--text-color) !important; }
+#modal .detail-label { color: var(--text-muted) !important; }
+.page-bg .history-title { color: var(--text-color) !important; }
+
+/* 浏览页弹窗遮罩：海雾蓝而非纯黑 */
+.page-bg #modal, .page-bg #passwordModal {
+    background: rgba(190, 218, 226, 0.45) !important;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
 }
 
 /* ============================================================
  * 通用：把项目里硬编码的深色面统一替换为玻璃面
  * （Tailwind 任意值类，使用转义选择器精确命中）
  * ========================================================== */
-.bg-\[\#111\],
-.bg-\[\#1a1a1a\],
-.bg-\[\#151515\],
-.bg-\[\#191919\],
-.bg-\[\#0a0a0a\] {
+.page-bg .bg-\[\#111\],
+.page-bg .bg-\[\#1a1a1a\],
+.page-bg .bg-\[\#151515\],
+.page-bg .bg-\[\#191919\],
+.page-bg .bg-\[\#0a0a0a\] {
     background-color: var(--glass-bg) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
     backdrop-filter: blur(var(--glass-blur)) saturate(150%);
 }
 
-.bg-\[\#222\],
-.bg-\[\#333\] {
+.page-bg .bg-\[\#222\],
+.page-bg .bg-\[\#333\] {
     background-color: var(--glass-bg-soft) !important;
     -webkit-backdrop-filter: blur(10px) saturate(140%);
     backdrop-filter: blur(10px) saturate(140%);
@@ -93,8 +133,8 @@
 /* ============================================================
  * 顶部操作按钮（历史 / 设置）
  * ========================================================== */
-header button,
-.home-btn {
+.page-bg header button,
+.page-bg .home-btn {
     border-radius: var(--radius-md) !important;
     border: 1px solid var(--glass-border) !important;
     background: var(--glass-bg) !important;
@@ -103,8 +143,8 @@ header button,
     box-shadow: var(--glass-shadow);
     transition: all 0.25s ease;
 }
-header button:hover,
-.home-btn:hover {
+.page-bg header button:hover,
+.page-bg .home-btn:hover {
     border-color: var(--glass-border-strong) !important;
     background: var(--glass-bg-strong) !important;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45),
@@ -214,38 +254,32 @@ header button:hover,
 /* ============================================================
  * 弹窗（详情 / 密码）—— 强玻璃
  * ========================================================== */
-#modal > div,
-#passwordModal > div {
+.page-bg #modal > div,
+.page-bg #passwordModal > div {
     border-radius: var(--radius-xl) !important;
     background: var(--glass-bg-strong) !important;
     border: 1px solid var(--glass-border) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
     backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.55),
+    box-shadow: 0 24px 56px rgba(40, 95, 120, 0.30),
                 inset 0 1px 0 var(--glass-highlight) !important;
 }
-/* 弹窗遮罩：用模糊代替纯黑，营造景深 */
-#modal,
-#passwordModal {
-    background: rgba(5, 8, 14, 0.55) !important;
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-}
+/* 弹窗遮罩：海雾蓝（亮色主题，见上方统一定义）*/
 #modal .modal-detail-info {
     background: var(--glass-bg-soft) !important;
     border: 1px solid var(--glass-border) !important;
     border-radius: var(--radius-md) !important;
 }
 
-/* 集数按钮玻璃化 */
-#episodesGrid button {
+/* 集数按钮玻璃化（仅浏览页详情弹窗；播放页保持深色）*/
+.page-bg #episodesGrid button {
     border-radius: var(--radius-sm) !important;
     background: var(--glass-bg-soft) !important;
     border: 1px solid var(--glass-border) !important;
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
 }
-#episodesGrid button:hover {
+.page-bg #episodesGrid button:hover {
     background: var(--glass-bg) !important;
     border-color: var(--glass-border-strong) !important;
     box-shadow: none !important;
@@ -256,7 +290,7 @@ header button:hover,
  * ========================================================== */
 .bg-gradient-to-r {
     /* 覆盖 Tailwind 的 indigo→purple→pink，改为自然青瓷渐变 */
-    background-image: linear-gradient(135deg, #4f8f8a, #6fb0ab) !important;
+    background-image: linear-gradient(135deg, #2e9ec2, #5bbcd9) !important;
     border-radius: var(--radius-md) !important;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.30),
                 inset 0 1px 0 var(--glass-highlight);
@@ -264,33 +298,33 @@ header button:hover,
     overflow: hidden;
 }
 .bg-gradient-to-r:hover {
-    background-image: linear-gradient(135deg, #5a9a95, #7bbcb7) !important;
+    background-image: linear-gradient(135deg, #3aacd0, #6bc8e2) !important;
 }
 
-/* 输入框玻璃化 */
-input[type="text"],
-input[type="password"],
-input[type="search"] {
+/* 输入框玻璃化（浏览页）*/
+.page-bg input[type="text"],
+.page-bg input[type="password"],
+.page-bg input[type="search"] {
     border-radius: var(--radius-sm) !important;
     background: var(--glass-bg-soft) !important;
     border: 1px solid var(--glass-border) !important;
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
 }
-input:focus {
+.page-bg input:focus {
     border-color: var(--glass-border-strong) !important;
     outline: none;
 }
 
-/* 关闭按钮玻璃化 */
-.close-btn {
+/* 关闭按钮玻璃化（浏览页）*/
+.page-bg .close-btn {
     border-radius: var(--radius-sm) !important;
     background: var(--glass-bg-soft) !important;
     border: 1px solid var(--glass-border) !important;
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 }
-.close-btn:hover {
+.page-bg .close-btn:hover {
     background: var(--glass-bg) !important;
     border-color: var(--glass-border-strong) !important;
 }
@@ -313,10 +347,11 @@ input:focus {
  * 播放器页头（player.html）玻璃化
  * ========================================================== */
 .player-header {
-    background: var(--glass-bg-strong) !important;
+    /* 播放页保持深色玻璃（不使用亮色变量），确保白字可读 */
+    background: rgba(15, 18, 24, 0.55) !important;
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
     backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-    border-bottom: 1px solid var(--glass-border) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
 }
 
 /* ============================================================
@@ -368,7 +403,7 @@ input:focus {
     border: 1px solid var(--glass-border-strong);
     transition: all 0.2s ease;
 }
-.wp-link:hover { background: rgba(111, 176, 171, 0.14); }
+.wp-link:hover { background: rgba(46, 158, 194, 0.14); }
 .wp-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .wp-chip {
     display: inline-flex;
@@ -408,15 +443,15 @@ input:focus {
 /* 增强态：柔和青瓷描边，区别于源画质 */
 .lt-quality-badge.is-enhanced {
     color: #e8f3f1;
-    border-color: rgba(111, 176, 171, 0.60);
-    background: linear-gradient(135deg, rgba(79, 143, 138, 0.42), rgba(111, 176, 171, 0.42));
+    border-color: rgba(46, 158, 194, 0.60);
+    background: linear-gradient(135deg, rgba(46, 158, 194, 0.42), rgba(91, 188, 217, 0.42));
 }
 /* 4K / 8K 用暖陶土点缀高亮 */
 .lt-quality-badge.is-uhd {
     color: #fff;
     border-color: var(--accent-color);
-    background: linear-gradient(135deg, rgba(211, 154, 106, 0.65), rgba(111, 176, 171, 0.55));
-    box-shadow: 0 2px 9px rgba(211, 154, 106, 0.30);
+    background: linear-gradient(135deg, rgba(224, 176, 120, 0.65), rgba(46, 158, 194, 0.55));
+    box-shadow: 0 2px 9px rgba(224, 176, 120, 0.30);
 }
 @media (max-width: 640px) {
     .lt-quality-badge { top: 6px; right: 6px; font-size: 0.66rem; padding: 1px 6px; }
@@ -432,7 +467,7 @@ input:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(5, 8, 14, 0.55);
+    background: rgba(190, 218, 226, 0.45);
     -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
 }
@@ -470,10 +505,10 @@ input:focus {
     color: #fff;
     border-radius: var(--radius-pill);
     border: 1px solid var(--glass-border-strong);
-    background: rgba(111, 176, 171, 0.14);
+    background: rgba(46, 158, 194, 0.14);
     transition: all 0.2s ease;
 }
-.lt-dl-cancel:hover { background: rgba(211, 154, 106, 0.20); border-color: var(--accent-color); }
+.lt-dl-cancel:hover { background: rgba(224, 176, 120, 0.20); border-color: var(--accent-color); }
 
 /* ============================================================
  * 增强强度滑块面板

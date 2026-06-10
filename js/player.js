@@ -466,7 +466,7 @@ function initPlayer(videoUrl) {
         autoPlayback: false,
         airplay: true,
         hotkey: false,
-        theme: '#6fb0ab',
+        theme: '#2e9ec2',
         lang: navigator.language.toLowerCase(),
         moreVideoAttr: {
             crossOrigin: 'anonymous',

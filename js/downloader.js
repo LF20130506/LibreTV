@@ -108,6 +108,32 @@
         return new Uint8Array(dec);
     }
 
+    // 按需加载 mux.js（TS→MP4 无损转封装库），只在第一次下载时加载
+    let muxLoading = null;
+    function loadMux() {
+        if (global.muxjs) return Promise.resolve(global.muxjs);
+        if (muxLoading) return muxLoading;
+        muxLoading = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'libs/mux.min.js';
+            s.onload = () => global.muxjs ? resolve(global.muxjs) : reject(new Error('mux.js 未就绪'));
+            s.onerror = () => reject(new Error('转封装库加载失败'));
+            document.head.appendChild(s);
+        });
+        return muxLoading;
+    }
+
+    // 保存 Blob 为文件
+    function saveBlob(parts, mime, filename) {
+        const blob = new Blob(parts, { type: mime });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    }
+
     // ===== 进度 UI =====
     let ui = null, aborter = null;
     function showProgress() {
@@ -187,29 +213,63 @@
             if (key.ivHex) explicitIv = hexToBytes(key.ivHex);
         }
 
-        // 4) 逐分片下载（含 init 段）
-        const parts = [];
-        if (mapAbs) parts.push(new Uint8Array(await fetchBuffer(mapAbs, signal)));
         const total = segments.length;
+
+        // —— 情况 A：源已是 fMP4 分片（含 EXT-X-MAP）→ 直接拼接为 .mp4 ——
+        if (mapAbs) {
+            const parts = [new Uint8Array(await fetchBuffer(mapAbs, signal))];
+            for (let i = 0; i < total; i++) {
+                if (signal.aborted) throw new Error('已取消');
+                let buf = await fetchBuffer(segments[i], signal);
+                if (cryptoKey) buf = (await decryptSeg(buf, cryptoKey, explicitIv || seqToIv(mediaSeq + i))).buffer;
+                parts.push(new Uint8Array(buf));
+                setProgress(i + 1, total);
+            }
+            saveBlob(parts, 'video/mp4', filename + '.mp4');
+            return;
+        }
+
+        // —— 情况 B：TS 分片 → 用 mux.js 无损转封装为 MP4（不重新编码）——
+        let muxjs = null;
+        try { muxjs = await loadMux(); } catch (e) { muxjs = null; }
+
+        if (muxjs && muxjs.mp4 && muxjs.mp4.Transmuxer) {
+            const transmuxer = new muxjs.mp4.Transmuxer({ keepOriginalTimestamps: true });
+            let initSeg = null;
+            const dataParts = [];
+            transmuxer.on('data', (seg) => {
+                if (!initSeg && seg.initSegment) initSeg = new Uint8Array(seg.initSegment);
+                if (seg.data) dataParts.push(new Uint8Array(seg.data));
+            });
+
+            for (let i = 0; i < total; i++) {
+                if (signal.aborted) throw new Error('已取消');
+                let buf = await fetchBuffer(segments[i], signal);
+                if (cryptoKey) buf = (await decryptSeg(buf, cryptoKey, explicitIv || seqToIv(mediaSeq + i))).buffer;
+                // 逐片喂入并 flush，输出 fMP4 片段（内存与逐片下载相当）
+                transmuxer.push(new Uint8Array(buf));
+                transmuxer.flush();
+                setProgress(i + 1, total);
+            }
+
+            if (initSeg && dataParts.length) {
+                saveBlob([initSeg, ...dataParts], 'video/mp4', filename + '.mp4');
+                return;
+            }
+            // 转封装无输出（少见，可能不是标准 H.264/AAC）→ 回退 TS
+        }
+
+        // —— 回退：转封装库不可用或无输出 → 仍保存为 TS ——
+        const parts = [];
         for (let i = 0; i < total; i++) {
             if (signal.aborted) throw new Error('已取消');
             let buf = await fetchBuffer(segments[i], signal);
-            if (cryptoKey) {
-                const iv = explicitIv || seqToIv(mediaSeq + i);
-                buf = (await decryptSeg(buf, cryptoKey, iv)).buffer;
-            }
+            if (cryptoKey) buf = (await decryptSeg(buf, cryptoKey, explicitIv || seqToIv(mediaSeq + i))).buffer;
             parts.push(new Uint8Array(buf));
             setProgress(i + 1, total);
         }
-
-        // 5) 合并并触发下载
-        const blob = new Blob(parts, { type: 'video/mp2t' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = filename + '.ts';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+        saveBlob(parts, 'video/mp2t', filename + '.ts');
+        if (global.showToast) global.showToast('已保存为 TS（无法转 MP4，可用 VLC 播放）', 'warning');
     }
 
     let busy = false;
@@ -220,7 +280,7 @@
             global.showToast && global.showToast('未找到可下载的视频地址', 'error');
             return;
         }
-        if (!global.confirm('下载会把整集分片合并为单个文件，可能消耗较多流量与内存。是否继续？')) return;
+        if (!global.confirm('将把整集分片下载并无损封装为 MP4（不重新编码），可能消耗较多流量与内存。是否继续？')) return;
 
         busy = true;
         aborter = new AbortController();
@@ -228,7 +288,7 @@
         showProgress();
         try {
             await downloadOne(m3u8, currentTitle(), signal);
-            global.showToast && global.showToast('下载完成', 'success');
+            global.showToast && global.showToast('下载完成（MP4）', 'success');
         } catch (e) {
             if (!signal.aborted) {
                 console.warn('[Downloader]', e);
@@ -251,7 +311,7 @@
             global.showToast && global.showToast('未找到可下载的剧集列表', 'error');
             return;
         }
-        if (!global.confirm(`将顺序下载整季共 ${list.length} 集，每集一个文件。浏览器可能弹出多文件下载许可，且耗时较长。是否继续？`)) return;
+        if (!global.confirm(`将顺序下载整季共 ${list.length} 集，每集封装为一个 MP4。浏览器可能弹出多文件下载许可，且耗时较长。是否继续？`)) return;
 
         busy = true;
         aborter = new AbortController();

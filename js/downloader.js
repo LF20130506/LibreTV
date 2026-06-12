@@ -234,7 +234,9 @@
         try { muxjs = await loadMux(); } catch (e) { muxjs = null; muxErr = (e && e.message) || '加载失败'; }
 
         if (muxjs && muxjs.mp4 && muxjs.mp4.Transmuxer) {
-            const transmuxer = new muxjs.mp4.Transmuxer({ keepOriginalTimestamps: true });
+            // 关键：所有分片先 push、最后只 flush 一次，并让时间轴归零（默认）。
+            // 否则逐片 flush + 保留原始时间戳会导致时长元数据错乱（如显示 100 天）。
+            const transmuxer = new muxjs.mp4.Transmuxer();
             let initSeg = null;
             const dataParts = [];
             transmuxer.on('data', (seg) => {
@@ -246,11 +248,12 @@
                 if (signal.aborted) throw new Error('已取消');
                 let buf = await fetchBuffer(segments[i], signal);
                 if (cryptoKey) buf = (await decryptSeg(buf, cryptoKey, explicitIv || seqToIv(mediaSeq + i))).buffer;
-                // 逐片喂入并 flush，输出 fMP4 片段（内存与逐片下载相当）
                 transmuxer.push(new Uint8Array(buf));
-                transmuxer.flush();
+                buf = null;
                 setProgress(i + 1, total);
             }
+            if (ui) ui.text.textContent = '封装 MP4 中…';
+            transmuxer.flush(); // 仅此一次：生成连续时间轴的 fMP4
 
             if (initSeg && dataParts.length) {
                 saveBlob([initSeg, ...dataParts], 'video/mp4', filename + '.mp4');

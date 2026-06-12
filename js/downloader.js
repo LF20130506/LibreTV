@@ -168,8 +168,9 @@
         ui = null;
     }
 
-    // 下载单集并保存为 filename.ts；进度通过 setProgress 显示
-    async function downloadOne(m3u8, filename, signal) {
+    // 下载单集。preferTs=true 时直接保存原始 TS（必定完整、低内存）；
+    // 否则用 mux.js 无损转封装为 MP4。返回实际格式 'mp4' | 'ts'。
+    async function downloadOne(m3u8, filename, signal, preferTs) {
         // 1) 取播放列表（可能是 master）
         let baseAbs = m3u8;
         let text = await fetchText(baseAbs, signal);
@@ -226,12 +227,15 @@
                 setProgress(i + 1, total);
             }
             saveBlob(parts, 'video/mp4', filename + '.mp4');
-            return;
+            return 'mp4';
         }
 
         // —— 情况 B：TS 分片 → 用 mux.js 无损转封装为 MP4（不重新编码）——
+        // preferTs 时跳过转封装，直接保存原始 TS
         let muxjs = null, muxErr = '';
-        try { muxjs = await loadMux(); } catch (e) { muxjs = null; muxErr = (e && e.message) || '加载失败'; }
+        if (!preferTs) {
+            try { muxjs = await loadMux(); } catch (e) { muxjs = null; muxErr = (e && e.message) || '加载失败'; }
+        }
 
         if (muxjs && muxjs.mp4 && muxjs.mp4.Transmuxer) {
             // 关键：所有分片先 push、最后只 flush 一次，并让时间轴归零（默认）。
@@ -257,13 +261,13 @@
 
             if (initSeg && dataParts.length) {
                 saveBlob([initSeg, ...dataParts], 'video/mp4', filename + '.mp4');
-                return;
+                return 'mp4';
             }
             muxErr = '转封装无输出(可能非标准 H.264/AAC)';
             // 转封装无输出 → 回退 TS
         }
 
-        // —— 回退：转封装库不可用或无输出 → 仍保存为 TS ——
+        // —— 保存为原始 TS（用户主动选 TS，或转封装不可用/无输出时回退）——
         const parts = [];
         for (let i = 0; i < total; i++) {
             if (signal.aborted) throw new Error('已取消');
@@ -273,27 +277,32 @@
             setProgress(i + 1, total);
         }
         saveBlob(parts, 'video/mp2t', filename + '.ts');
-        console.warn('[Downloader] 回退 TS 原因:', muxErr || '未知');
-        if (global.showToast) global.showToast(`已保存为 TS（${muxErr || '无法转 MP4'}）`, 'warning');
+        if (!preferTs) console.warn('[Downloader] 回退 TS 原因:', muxErr || '未知');
+        return 'ts';
     }
 
     let busy = false;
-    async function start() {
+    async function start(preferTs) {
         if (busy) return;
         const m3u8 = currentEpisodeUrl();
         if (!m3u8 || !/^https?:\/\//i.test(m3u8)) {
             global.showToast && global.showToast('未找到可下载的视频地址', 'error');
             return;
         }
-        if (!global.confirm('将把整集分片下载并无损封装为 MP4（不重新编码），可能消耗较多流量与内存。是否继续？')) return;
+        const tip = preferTs
+            ? '将把整集分片合并为原始 TS（必定完整，可用 VLC/Infuse 播放）。是否继续？'
+            : '将把整集分片下载并无损封装为 MP4（不重新编码），可能消耗较多流量与内存。是否继续？';
+        if (!global.confirm(tip)) return;
 
         busy = true;
         aborter = new AbortController();
         const signal = aborter.signal;
         showProgress();
         try {
-            await downloadOne(m3u8, currentTitle(), signal);
-            global.showToast && global.showToast('下载完成（MP4）', 'success');
+            const fmt = await downloadOne(m3u8, currentTitle(), signal, preferTs);
+            global.showToast && global.showToast(
+                `下载完成（${(fmt || 'mp4').toUpperCase()}）${fmt === 'ts' ? '，可用 VLC/Infuse 播放' : ''}`,
+                'success');
         } catch (e) {
             if (!signal.aborted) {
                 console.warn('[Downloader]', e);
@@ -305,6 +314,7 @@
             busy = false; aborter = null; closeProgress();
         }
     }
+    function startTs() { return start(true); }
 
     // 整季：逐集顺序下载，每集一个 .ts 文件
     async function startSeason() {
@@ -353,11 +363,14 @@
                 html: icon,
                 tooltip: '下载',
                 selector: [
-                    { html: '下载本集', value: 'one' },
-                    { html: '下载整季', value: 'season' },
+                    { html: '本集 MP4', value: 'one' },
+                    { html: '本集 TS（保底）', value: 'ts' },
+                    { html: '整季 MP4', value: 'season' },
                 ],
                 onSelect: function (item) {
-                    if (item.value === 'season') startSeason(); else start();
+                    if (item.value === 'season') startSeason();
+                    else if (item.value === 'ts') startTs();
+                    else start();
                     return icon; // 控件保持图标
                 },
             });
@@ -372,5 +385,5 @@
         }
     }
 
-    global.LTDownloader = { setup, start, startSeason };
+    global.LTDownloader = { setup, start, startTs, startSeason };
 })(window);

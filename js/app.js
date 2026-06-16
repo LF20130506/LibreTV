@@ -913,6 +913,8 @@ async function showDetails(id, vod_name, sourceCode) {
         // 不对标题进行截断处理，允许完整显示
         modalTitle.innerHTML = `<span class="break-words">${vod_name || '未知视频'}</span>${sourceName}`;
         currentVideoTitle = vod_name || '未知视频';
+        // 记录内容类型（动漫/纪录片/电影…），供播放页"自动增强"判定
+        try { localStorage.setItem('currentVideoType', (data.videoInfo && data.videoInfo.type) || ''); } catch (e) {}
 
         if (data.episodes && data.episodes.length > 0) {
             // 构建详情信息HTML
@@ -1012,7 +1014,9 @@ function playVideo(url, vod_name, sourceCode, episodeIndex = 0, vodId = '') {
     let currentPath = window.location.href;
 
     // 构建播放页面URL，使用watch.html作为中间跳转页
-    let watchUrl = `watch.html?id=${vodId || ''}&source=${sourceCode || ''}&url=${encodeURIComponent(url)}&index=${episodeIndex}&title=${encodeURIComponent(vod_name || '')}`;
+    let typeName = '';
+    try { typeName = localStorage.getItem('currentVideoType') || ''; } catch (e) {}
+    let watchUrl = `watch.html?id=${vodId || ''}&source=${sourceCode || ''}&url=${encodeURIComponent(url)}&index=${episodeIndex}&title=${encodeURIComponent(vod_name || '')}&typeName=${encodeURIComponent(typeName)}`;
 
     // 添加返回URL参数
     if (currentPath.includes('index.html') || currentPath.endsWith('/')) {

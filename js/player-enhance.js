@@ -11,21 +11,43 @@
     const LS_ENHANCE = 'playerEnhanceLevel';
 
     // 画质增强预设。
+    // auto：按内容类型/分辨率自动路由（动画→Anime4K，低清实拍→降噪，高清实拍→原画）。
     // CSS 档（off/light/standard/strong）：SVG 柔性锐化，无 brightness 防过曝。
     // Anime4K 档（a4k/a4k_strong）：WebGL 实时增强，钳制锐化 + 线条加深，几乎无白边。
+    // sr/sr_strong（降噪柔化/降噪 强）：WebGL 双边降噪，实拍/老片去色块去噪，不锐化。
     const ENHANCE_PRESETS = [
+        { value: 'auto',       html: '自动(推荐)',    filter: '' },
         { value: 'off',        html: '关闭',         filter: '' },
         { value: 'light',      html: '轻度',         filter: 'url(#ltSharpenLight) saturate(1.04)' },
         { value: 'standard',   html: '标准',         filter: 'url(#ltSharpen) contrast(1.03) saturate(1.07)' },
         { value: 'strong',     html: '强',           filter: 'url(#ltSharpenStrong) contrast(1.05) saturate(1.10)' },
         { value: 'a4k',        html: 'Anime4K(动画)', filter: '', anime4k: 'a4k' },
         { value: 'a4k_strong', html: 'Anime4K 强',    filter: '', anime4k: 'a4k_strong' },
-        { value: 'sr',         html: '超分(实拍)',     filter: '', anime4k: 'sr' },
-        { value: 'sr_strong',  html: '超分 强',        filter: '', anime4k: 'sr_strong' },
+        { value: 'sr',         html: '降噪柔化',       filter: '', anime4k: 'sr' },
+        { value: 'sr_strong',  html: '降噪 强',        filter: '', anime4k: 'sr_strong' },
     ];
 
+    // 动画类内容关键词（用片名/分类判定）
+    const ANIME_RE = /动漫|动画片|动画|国漫|日漫|港漫|欧美动漫|港台动漫|アニメ|anime|cartoon|卡通|番剧|剧场版/i;
+    function classifyContent() {
+        const t = String(global.currentVideoType || '');
+        let title = '';
+        try { title = (document.getElementById('videoTitle') || {}).textContent || ''; } catch (e) {}
+        return ANIME_RE.test(t + ' ' + title);
+    }
+    // 「自动」路由：动画→Anime4K；低清实拍(≤576p)→降噪；高清实拍/未知→原画(off)
+    function resolveAuto(art) {
+        const sh = (art && art.video && art.video.videoHeight) || 0;
+        if (classifyContent()) return 'a4k';
+        if (sh && sh <= 576) return 'sr';
+        return 'off';
+    }
+    function updateEnhanceTooltip(art, text) {
+        try { art.setting.update({ name: 'enhance', tooltip: text }); } catch (e) {}
+    }
+
     function getSavedEnhance() {
-        try { return localStorage.getItem(LS_ENHANCE) || 'off'; } catch (e) { return 'off'; }
+        try { return localStorage.getItem(LS_ENHANCE) || 'auto'; } catch (e) { return 'auto'; }
     }
     function saveEnhance(value) {
         try { localStorage.setItem(LS_ENHANCE, value); } catch (e) {}
@@ -37,17 +59,20 @@
     // 把增强应用到视频元素：CSS 滤镜档与 Anime4K(WebGL)档互斥
     function applyEnhance(art, value) {
         if (!art || !art.video) return;
-        const preset = presetByValue(value);
+        // 'auto' 先按内容/分辨率解析为实际档
+        const isAuto = value === 'auto';
+        const effective = isAuto ? resolveAuto(art) : value;
+        const preset = presetByValue(effective);
         if (preset.anime4k) {
-            // 切到 Anime4K：清掉 CSS 滤镜，启用 WebGL 覆盖层
+            // 切到 Anime4K/降噪：清掉 CSS 滤镜，启用 WebGL 覆盖层
             art.video.style.filter = '';
             let ok = false;
             if (global.Anime4K) ok = global.Anime4K.enable(art, preset.anime4k);
-            // WebGL 启用失败则回退到 CSS「标准」档，保证仍有增强效果
             if (!ok) {
                 // WebGL 不可用时，绝不回退到会产生白边的 SVG 锐化——直接关闭增强
                 art.video.style.filter = '';
-                if (typeof global.showToast === 'function') {
+                // 自动模式静默回退，不打扰；手动选择才提示
+                if (!isAuto && typeof global.showToast === 'function') {
                     global.showToast('当前环境不支持 Anime4K(需 WebGL2)，已关闭增强', 'warning');
                 }
             }
@@ -55,7 +80,9 @@
             if (global.Anime4K) global.Anime4K.disable();
             art.video.style.filter = preset.filter;
         }
-        art.video.dataset.enhance = preset.value;
+        art.video.dataset.enhance = value;
+        // 自动档：tooltip 显示「自动 → 实际档」
+        if (isAuto) updateEnhanceTooltip(art, '自动 → ' + preset.html);
         // 刷新画质角标（增强输出尺寸在首帧渲染后才确定，故延迟多刷几次）
         updateQualityBadge(art);
         [120, 400, 900].forEach((t) => setTimeout(() => updateQualityBadge(art), t));

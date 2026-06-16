@@ -121,6 +121,11 @@ function initializePageContent() {
     let videoUrl = urlParams.get('url');
     const title = urlParams.get('title');
     const sourceCode = urlParams.get('source');
+    // 内容类型（供"自动增强"判定动画/实拍），URL 缺失时回退 localStorage
+    try {
+        window.currentVideoType = urlParams.get('typeName')
+            || localStorage.getItem('currentVideoType') || '';
+    } catch (e) { window.currentVideoType = urlParams.get('typeName') || ''; }
     let index = parseInt(urlParams.get('index') || '0');
     const episodesList = urlParams.get('episodes'); // 从URL获取集数信息
     const savedPosition = parseInt(urlParams.get('position') || '0'); // 获取保存的播放位置

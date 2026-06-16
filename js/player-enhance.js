@@ -14,17 +14,20 @@
     // auto：按内容类型/分辨率自动路由（动画→Anime4K，低清实拍→降噪，高清实拍→原画）。
     // CSS 档（off/light/standard/strong）：SVG 柔性锐化，无 brightness 防过曝。
     // Anime4K 档（a4k/a4k_strong）：WebGL 实时增强，钳制锐化 + 线条加深，几乎无白边。
-    // sr/sr_strong（降噪柔化/降噪 强）：WebGL 双边降噪，实拍/老片去色块去噪，不锐化。
+    // sr/sr_strong（老片降噪/降噪 强）：WebGL 双边降噪，老片去色块去噪，不锐化。
+    // clear/clear_strong（实拍超清/超清 强）：WebGL CAS 输出锐化，高清实拍提升清晰度，无白边。
     const ENHANCE_PRESETS = [
-        { value: 'auto',       html: '自动(推荐)',    filter: '' },
-        { value: 'off',        html: '关闭',         filter: '' },
-        { value: 'light',      html: '轻度',         filter: 'url(#ltSharpenLight) saturate(1.04)' },
-        { value: 'standard',   html: '标准',         filter: 'url(#ltSharpen) contrast(1.03) saturate(1.07)' },
-        { value: 'strong',     html: '强',           filter: 'url(#ltSharpenStrong) contrast(1.05) saturate(1.10)' },
-        { value: 'a4k',        html: 'Anime4K(动画)', filter: '', anime4k: 'a4k' },
-        { value: 'a4k_strong', html: 'Anime4K 强',    filter: '', anime4k: 'a4k_strong' },
-        { value: 'sr',         html: '降噪柔化',       filter: '', anime4k: 'sr' },
-        { value: 'sr_strong',  html: '降噪 强',        filter: '', anime4k: 'sr_strong' },
+        { value: 'auto',         html: '自动(推荐)',    filter: '' },
+        { value: 'off',          html: '关闭',         filter: '' },
+        { value: 'light',        html: '轻度',         filter: 'url(#ltSharpenLight) saturate(1.04)' },
+        { value: 'standard',     html: '标准',         filter: 'url(#ltSharpen) contrast(1.03) saturate(1.07)' },
+        { value: 'strong',       html: '强',           filter: 'url(#ltSharpenStrong) contrast(1.05) saturate(1.10)' },
+        { value: 'a4k',          html: 'Anime4K(动画)', filter: '', anime4k: 'a4k' },
+        { value: 'a4k_strong',   html: 'Anime4K 强',    filter: '', anime4k: 'a4k_strong' },
+        { value: 'clear',        html: '实拍超清',       filter: '', anime4k: 'clear' },
+        { value: 'clear_strong', html: '超清 强',        filter: '', anime4k: 'clear_strong' },
+        { value: 'sr',           html: '老片降噪',       filter: '', anime4k: 'sr' },
+        { value: 'sr_strong',    html: '降噪 强',        filter: '', anime4k: 'sr_strong' },
     ];
 
     // 动画类内容关键词（用片名/分类判定）
@@ -253,17 +256,17 @@
         badgeEl.classList.toggle('is-enhanced', running);
     }
 
-    // 选高分辨率时确保 WebGL 增强在运行（否则上采样无意义）；默认切到「超分(实拍)」
+    // 选高分辨率时确保 WebGL 增强在运行（否则纯放大只会更糊）；默认切到「实拍超清」
     function ensureWebGL(art) {
         const cur = getSavedEnhance();
         if (presetByValue(cur).anime4k) return; // 已是 WebGL 模式
-        applyEnhance(art, 'sr');
-        saveEnhance('sr');
+        applyEnhance(art, 'clear');
+        saveEnhance('clear');
         try {
             art.setting.update({
                 name: 'enhance',
-                tooltip: presetByValue('sr').html,
-                selector: ENHANCE_PRESETS.map((p) => ({ html: p.html, value: p.value, default: p.value === 'sr' })),
+                tooltip: presetByValue('clear').html,
+                selector: ENHANCE_PRESETS.map((p) => ({ html: p.html, value: p.value, default: p.value === 'clear' })),
             });
         } catch (e) {}
     }

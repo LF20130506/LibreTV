@@ -7,13 +7,16 @@
 // 全程容错：WebGL2 不可用 / 视频跨域污染 / 着色器编译失败 → 返回 false 由调用方回退。
 
 (function (global) {
-    // 强度档位。mode: 0 = Anime4K(动画线条增强)；1 = 双边降噪(实拍/老片去色块去噪，不锐化)。
-    // 注意：mode 1 下 sharp 字段语义为「降噪强度」（值越大去噪越强），并非锐化。
+    // 强度档位。mode: 0 = Anime4K(动画线条增强)；1 = 双边降噪(实拍/老片去色块)；
+    //          2 = CAS 输出分辨率锐化(实拍超清，提升清晰度，无白边)。
+    // 注意：mode 1 下 sharp 语义为「降噪强度」；mode 2 下 sharp 为 CAS 锐度(0~1)。
     const PROFILES = {
-        a4k:        { mode: 0, sharp: 0.85, line: 0.30 },
-        a4k_strong: { mode: 0, sharp: 1.45, line: 0.50 },
-        sr:         { mode: 1, sharp: 0.50, line: 0.0 }, // 降噪柔化（中等）
-        sr_strong:  { mode: 1, sharp: 0.85, line: 0.0 }, // 降噪 强（老片噪点重时）
+        a4k:          { mode: 0, sharp: 0.85, line: 0.30 },
+        a4k_strong:   { mode: 0, sharp: 1.45, line: 0.50 },
+        sr:           { mode: 1, sharp: 0.50, line: 0.0 }, // 老片降噪（中等）
+        sr_strong:    { mode: 1, sharp: 0.85, line: 0.0 }, // 降噪 强（老片噪点重时）
+        clear:        { mode: 2, sharp: 0.45, line: 0.0 }, // 实拍超清（中等清晰）
+        clear_strong: { mode: 2, sharp: 0.75, line: 0.0 }, // 超清 强
     };
 
     const VERT = `#version 300 es
@@ -27,15 +30,41 @@
     const FRAG = `#version 300 es
     precision highp float;
     uniform sampler2D uTex;
-    uniform vec2 uTexel;   // 1.0 / 纹理尺寸
-    uniform float uSharp;  // mode0:锐化强度  mode1:降噪强度
-    uniform float uLine;   // 线条加深强度
-    uniform int uMode;     // 0=Anime4K, 1=双边降噪(实拍/老片)
+    uniform vec2 uTexel;    // 1.0 / 源纹理尺寸（mode 0/1 邻域间距）
+    uniform vec2 uTexelOut; // 1.0 / 输出尺寸（mode 2 在放大后的像素上锐化）
+    uniform float uSharp;   // mode0:锐化  mode1:降噪  mode2:CAS锐度
+    uniform float uLine;    // 线条加深强度
+    uniform int uMode;      // 0=Anime4K, 1=双边降噪, 2=CAS输出锐化(实拍超清)
     in vec2 vUv;
     out vec4 frag;
     float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
     void main(){
         vec3 c  = texture(uTex, vUv).rgb;
+
+        if (uMode == 2) {
+            // ===== 实拍超清：CAS 对比度自适应锐化，邻域取「输出像素间距」=====
+            // 在 bilinear 放大后的边缘梯度上锐化 → 真正变清晰；钳制 min/max → 无白边。
+            vec2 t = uTexelOut;
+            vec3 cn = texture(uTex, vUv + vec2(0.0, -t.y)).rgb;
+            vec3 cs = texture(uTex, vUv + vec2(0.0,  t.y)).rgb;
+            vec3 ce = texture(uTex, vUv + vec2( t.x, 0.0)).rgb;
+            vec3 cw = texture(uTex, vUv + vec2(-t.x, 0.0)).rgb;
+            vec3 cne= texture(uTex, vUv + vec2( t.x, -t.y)).rgb;
+            vec3 cnw= texture(uTex, vUv + vec2(-t.x, -t.y)).rgb;
+            vec3 cse= texture(uTex, vUv + vec2( t.x,  t.y)).rgb;
+            vec3 csw= texture(uTex, vUv + vec2(-t.x,  t.y)).rgb;
+            vec3 mnc = min(min(min(cn, cs), min(ce, cw)), c);
+            mnc = min(mnc, min(min(cne, cnw), min(cse, csw)));
+            vec3 mxc = max(max(max(cn, cs), max(ce, cw)), c);
+            mxc = max(mxc, max(max(cne, cnw), max(cse, csw)));
+            vec3 amp = sqrt(clamp(min(mnc, 1.0 - mxc) / max(mxc, 1e-4), 0.0, 1.0));
+            float peak = -1.0 / mix(8.0, 5.0, clamp(uSharp, 0.0, 1.0));
+            vec3 wgt = amp * peak;
+            vec3 outC = (c + (cn + cs + ce + cw) * wgt) / (1.0 + 4.0 * wgt);
+            frag = vec4(clamp(outC, 0.0, 1.0), 1.0);
+            return;
+        }
+
         vec3 n  = texture(uTex, vUv + vec2(0.0, -uTexel.y)).rgb;
         vec3 s  = texture(uTex, vUv + vec2(0.0,  uTexel.y)).rgb;
         vec3 e  = texture(uTex, vUv + vec2( uTexel.x, 0.0)).rgb;
@@ -89,7 +118,7 @@
     }`;
 
     let gl = null, canvas = null, program = null, vao = null, tex = null;
-    let uTexel, uSharp, uLine, uMode;
+    let uTexel, uTexelOut, uSharp, uLine, uMode;
     let rafId = 0, rvfcHandle = 0, running = false;
     let videoEl = null, profile = PROFILES.a4k;
     let resizeObs = null;
@@ -140,6 +169,7 @@
         }
         gl.useProgram(program);
         uTexel = gl.getUniformLocation(program, 'uTexel');
+        uTexelOut = gl.getUniformLocation(program, 'uTexelOut');
         uSharp = gl.getUniformLocation(program, 'uSharp');
         uLine = gl.getUniformLocation(program, 'uLine');
         uMode = gl.getUniformLocation(program, 'uMode');
@@ -187,8 +217,9 @@
             gl.viewport(0, 0, ow, oh);
             outputHeight = oh;
             outputWidth = ow;
-            // uTexel 基于源尺寸 → 锐化作用于真实源细节；纹理按源分辨率上传
+            // uTexel 基于源尺寸（mode 0/1）；uTexelOut 基于输出尺寸（mode 2 在放大后锐化）
             gl.uniform2f(uTexel, 1.0 / sw, 1.0 / sh);
+            gl.uniform2f(uTexelOut, 1.0 / ow, 1.0 / oh);
         }
     }
 
@@ -205,10 +236,10 @@
                 gl.bindTexture(gl.TEXTURE_2D, tex);
                 // 可能抛 SecurityError（视频被跨域污染）→ 由外层 catch 关闭
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoEl);
-                // mode1(降噪)强度限定在 ~1 以内，用倍率时做钳制
-                gl.uniform1f(uSharp, profile.mode === 1
-                    ? Math.min(1.2, profile.sharp * strengthMult)
-                    : profile.sharp * strengthMult);
+                // mode 1(降噪)/2(CAS) 的 sharp 取值有限，用倍率时做钳制；mode 0 可超过 1
+                gl.uniform1f(uSharp, profile.mode === 0
+                    ? profile.sharp * strengthMult
+                    : Math.min(profile.mode === 2 ? 0.98 : 1.2, profile.sharp * strengthMult));
                 gl.uniform1f(uLine, profile.line * strengthMult);
                 gl.uniform1i(uMode, profile.mode | 0);
                 gl.bindVertexArray(vao);

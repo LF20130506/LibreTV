@@ -7,12 +7,13 @@
 // 全程容错：WebGL2 不可用 / 视频跨域污染 / 着色器编译失败 → 返回 false 由调用方回退。
 
 (function (global) {
-    // 强度档位。mode: 0 = Anime4K(动画线条增强)，1 = CAS(实拍自适应锐化/超分)
+    // 强度档位。mode: 0 = Anime4K(动画线条增强)；1 = 双边降噪(实拍/老片去色块去噪，不锐化)。
+    // 注意：mode 1 下 sharp 字段语义为「降噪强度」（值越大去噪越强），并非锐化。
     const PROFILES = {
         a4k:        { mode: 0, sharp: 0.85, line: 0.30 },
         a4k_strong: { mode: 0, sharp: 1.45, line: 0.50 },
-        sr:         { mode: 1, sharp: 0.62, line: 0.0 },
-        sr_strong:  { mode: 1, sharp: 0.88, line: 0.0 },
+        sr:         { mode: 1, sharp: 0.50, line: 0.0 }, // 降噪柔化（中等）
+        sr_strong:  { mode: 1, sharp: 0.85, line: 0.0 }, // 降噪 强（老片噪点重时）
     };
 
     const VERT = `#version 300 es
@@ -27,9 +28,9 @@
     precision highp float;
     uniform sampler2D uTex;
     uniform vec2 uTexel;   // 1.0 / 纹理尺寸
-    uniform float uSharp;  // 锐化强度
+    uniform float uSharp;  // mode0:锐化强度  mode1:降噪强度
     uniform float uLine;   // 线条加深强度
-    uniform int uMode;     // 0=Anime4K, 1=CAS(实拍超分)
+    uniform int uMode;     // 0=Anime4K, 1=双边降噪(实拍/老片)
     in vec2 vUv;
     out vec4 frag;
     float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
@@ -45,17 +46,21 @@
         vec3 sw = texture(uTex, vUv + vec2(-uTexel.x,  uTexel.y)).rgb;
 
         if (uMode == 1) {
-            // ===== CAS：对比度自适应锐化（适合实拍/纪录片，无线条加深、无白边）=====
-            vec3 mnc = min(min(min(n, s), min(e, w)), c);
-            mnc = min(mnc, min(min(ne, nw), min(se, sw)));
-            vec3 mxc = max(max(max(n, s), max(e, w)), c);
-            mxc = max(mxc, max(max(ne, nw), max(se, sw)));
-            // 自适应权重：亮部/暗部裕度小则少锐化，避免过冲
-            vec3 amp = sqrt(clamp(min(mnc, 1.0 - mxc) / max(mxc, 1e-4), 0.0, 1.0));
-            float peak = -1.0 / mix(8.0, 5.0, clamp(uSharp, 0.0, 1.0));
-            vec3 wgt = amp * peak;
-            vec3 outC = (c + (n + s + e + w) * wgt) / (1.0 + 4.0 * wgt);
-            frag = vec4(clamp(outC, 0.0, 1.0), 1.0);
+            // ===== 双边降噪：去压缩色块/噪点，边缘保持，不锐化（适合实拍/老片）=====
+            // 邻居按颜色相似度加权平均：平坦区被抚平，颜色差大的边缘权重低→保留不糊。
+            float sigma = max(0.03, uSharp * 0.22); // 颜色相似带宽，uSharp 越大去噪越强
+            float k = 1.0 / (2.0 * sigma * sigma);
+            vec3 nb[8];
+            nb[0]=n; nb[1]=s; nb[2]=e; nb[3]=w; nb[4]=ne; nb[5]=nw; nb[6]=se; nb[7]=sw;
+            vec3 sum = c;       // 中心权重 1
+            float wsum = 1.0;
+            for (int i = 0; i < 8; i++) {
+                vec3 d = nb[i] - c;
+                float wgt = exp(-dot(d, d) * k);
+                sum += nb[i] * wgt;
+                wsum += wgt;
+            }
+            frag = vec4(clamp(sum / wsum, 0.0, 1.0), 1.0);
             return;
         }
 
@@ -200,9 +205,9 @@
                 gl.bindTexture(gl.TEXTURE_2D, tex);
                 // 可能抛 SecurityError（视频被跨域污染）→ 由外层 catch 关闭
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoEl);
-                // CAS 的 sharp 取值范围有限(0~1)，用倍率时做钳制
+                // mode1(降噪)强度限定在 ~1 以内，用倍率时做钳制
                 gl.uniform1f(uSharp, profile.mode === 1
-                    ? Math.min(0.98, profile.sharp * strengthMult)
+                    ? Math.min(1.2, profile.sharp * strengthMult)
                     : profile.sharp * strengthMult);
                 gl.uniform1f(uLine, profile.line * strengthMult);
                 gl.uniform1i(uMode, profile.mode | 0);

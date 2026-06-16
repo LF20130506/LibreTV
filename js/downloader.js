@@ -191,6 +191,13 @@
             if (best) { baseAbs = toOriginalAbs(best, baseAbs); text = await fetchText(baseAbs, signal); }
         }
 
+        // 1.5) 去插入式广告（与播放器同一逻辑），尊重"分片广告过滤"开关
+        try {
+            let adOn = true;
+            try { adOn = localStorage.getItem('adFilteringEnabled') !== 'false'; } catch (e) {}
+            if (adOn && typeof filterAdsFromM3U8 === 'function') text = filterAdsFromM3U8(text, true);
+        } catch (e) {}
+
         // 2) 解析媒体列表
         const { segments, key, mapAbs, mediaSeq } = parseMedia(text, baseAbs);
         if (!segments.length) throw new Error('未解析到任何分片');

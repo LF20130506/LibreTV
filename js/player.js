@@ -794,24 +794,61 @@ class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
     }
 }
 
-// 过滤可疑的广告内容
+// 过滤插入式视频广告：按"分片来源分歧"识别并删除广告分片
+// （如意资源等把广告分片从另一个 host/目录插入；正片分片来源是众数）。
 function filterAdsFromM3U8(m3u8Content, strictMode = false) {
     if (!m3u8Content) return '';
-
-    // 按行分割M3U8内容
     const lines = m3u8Content.split('\n');
-    const filteredLines = [];
 
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        // 只过滤#EXT-X-DISCONTINUITY标识
-        if (!line.includes('#EXT-X-DISCONTINUITY')) {
-            filteredLines.push(line);
-        }
+    // 分片"来源键"：绝对URL→host+目录；相对→目录前缀
+    function segKey(uri) {
+        const u0 = uri.split('?')[0];
+        try {
+            if (/^https?:\/\//i.test(u0)) {
+                const u = new URL(u0);
+                return u.host + u.pathname.replace(/[^/]*$/, '');
+            }
+        } catch (e) {}
+        return 'rel:' + u0.replace(/[^/]*$/, '');
     }
 
-    return filteredLines.join('\n');
+    // 找首个分片(#EXTINF)，之前为 header
+    let firstInf = -1;
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('#EXTINF')) { firstInf = i; break; }
+    }
+    if (firstInf < 0) {
+        // 无分片（如主列表）：沿用旧行为，仅去 discontinuity
+        return lines.filter((l) => !l.includes('#EXT-X-DISCONTINUITY')).join('\n');
+    }
+
+    const header = lines.slice(0, firstInf);
+    const blocks = [];           // 每块 = 标签行 + 该分片URI
+    let cur = [];
+    for (let i = firstInf; i < lines.length; i++) {
+        const raw = lines[i];
+        const t = raw.trim();
+        cur.push(raw);
+        if (t && !t.startsWith('#')) { blocks.push({ lines: cur, key: segKey(t) }); cur = []; }
+    }
+    const tail = cur;            // #EXT-X-ENDLIST 等尾行
+
+    // 统计众数来源 = 正片
+    const count = {};
+    blocks.forEach((b) => { count[b.key] = (count[b.key] || 0) + 1; });
+    let majKey = blocks[0].key, majN = 0;
+    for (const k in count) if (count[k] > majN) { majN = count[k]; majKey = k; }
+    const dropFrac = (blocks.length - majN) / blocks.length;
+    // 保守：异源占比 >40% 不敢删（怕误删正片），退回仅去 discontinuity
+    const removeAds = dropFrac > 0 && dropFrac <= 0.4;
+
+    const out = header.slice();
+    blocks.forEach((b) => {
+        if (removeAds && b.key !== majKey) return; // 丢弃广告块
+        b.lines.forEach((l) => { if (!l.includes('#EXT-X-DISCONTINUITY')) out.push(l); });
+    });
+    tail.forEach((l) => { if (!l.includes('#EXT-X-DISCONTINUITY')) out.push(l); });
+    return out.join('\n');
 }
 
 

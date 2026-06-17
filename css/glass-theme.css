@@ -543,6 +543,94 @@ body.page-bg { color: var(--text-color); }
 }
 
 /* ============================================================
+ * 「精致现代」精修层（海滩玻璃基础上提升质感；高对比主题在其后覆盖）
+ * ========================================================== */
+
+/* 1) 字体排印：精致系统字体栈 + 平滑 */
+body.page-bg {
+    font-family: -apple-system, "SF Pro Text", "PingFang SC", "Segoe UI", Roboto,
+                 "Helvetica Neue", "Microsoft YaHei", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: 0.005em;
+}
+.page-bg h1, .page-bg h2, .page-bg h3,
+.page-bg .gradient-text { letter-spacing: -0.01em; }
+.page-bg .gradient-text { font-weight: 700; }
+/* 设置面板分组小标题：更克制的字距与字号 */
+.page-bg #settingsPanel label.block,
+.page-bg #historyPanel h2 { letter-spacing: 0.02em; }
+
+/* 统一柔和层级阴影（带一点海蓝灰色相，替代零散黑硬阴影） */
+:root {
+    --elev-1: 0 2px 6px rgba(40, 95, 110, 0.08), 0 6px 18px rgba(40, 95, 110, 0.10);
+    --elev-2: 0 4px 10px rgba(40, 95, 110, 0.10), 0 12px 30px rgba(40, 95, 110, 0.14);
+    --elev-3: 0 8px 20px rgba(40, 95, 110, 0.14), 0 24px 56px rgba(40, 95, 110, 0.18);
+    --ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* 2) 卡片/面板/弹窗/搜索框统一到 elevation + 柔和过渡 + 微抬升 */
+.card-hover {
+    box-shadow: var(--elev-1) !important;
+    transition: transform 0.22s var(--ease-soft), box-shadow 0.22s var(--ease-soft),
+                border-color 0.22s var(--ease-soft) !important;
+}
+.card-hover:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--elev-2) !important;
+}
+.flex.items-stretch.shadow-lg { box-shadow: var(--elev-1) !important; }
+#settingsPanel, #historyPanel, .settings-panel, .history-panel { box-shadow: var(--elev-3) !important; }
+.page-bg #modal > div, .page-bg #passwordModal > div {
+    box-shadow: var(--elev-3), inset 0 1px 0 var(--glass-highlight) !important;
+}
+.page-bg header button, .page-bg .home-btn { box-shadow: var(--elev-1) !important; }
+.page-bg header button:hover, .page-bg .home-btn:hover { box-shadow: var(--elev-2) !important; }
+
+/* 3) 配色统一到海滩调（覆盖杂色 pink/blue） */
+/* 豆瓣开关/刷新/标签：粉 → 海蓝主色 */
+.page-bg .douban-toggle-button.active,
+.page-bg .douban-refresh-button { background: var(--primary-color) !important; color: #fff !important; }
+.page-bg .douban-refresh-button:hover { background: var(--primary-light) !important; }
+.page-bg .douban-tag,
+.page-bg .recent-search-tag {
+    background: var(--glass-bg-soft) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: var(--text-color) !important;
+    border-radius: var(--radius-pill) !important;
+}
+.page-bg .douban-tag:hover,
+.page-bg .recent-search-tag:hover { border-color: var(--glass-border-strong) !important; }
+.page-bg .douban-tag.active {
+    background: var(--primary-color) !important; border-color: var(--primary-color) !important; color: #fff !important;
+}
+/* 结果卡片类型/年份标签：蓝/紫 → 青(类型)/沙(年份) 淡色 pill */
+.page-bg .bg-blue-500 { background-color: rgba(31, 179, 196, 0.16) !important; }
+.page-bg .text-blue-300 { color: #1391a0 !important; }
+.page-bg .bg-purple-500 { background-color: rgba(242, 166, 90, 0.18) !important; }
+.page-bg .text-purple-300 { color: #b06f2e !important; }
+
+/* 4) 间距与节奏：搜索结果更舒展 */
+.page-bg #results { gap: 1.1rem !important; }
+.page-bg .card-hover .p-2 { padding: 0.85rem !important; }
+.page-bg .search-tag { padding: 0.4rem 0.9rem !important; }
+
+/* 5) 微交互：统一过渡 + 清晰焦点描边 */
+.page-bg button, .page-bg a, .page-bg .card-hover, .page-bg .search-tag {
+    transition: all 0.2s var(--ease-soft);
+}
+.page-bg button:focus-visible,
+.page-bg a:focus-visible,
+.page-bg input:focus-visible {
+    outline: 2px solid var(--glass-border-strong);
+    outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .card-hover:hover { transform: none !important; }
+}
+
+/* ============================================================
  * 高对比度主题 (html[data-theme="contrast"])
  * 纯黑底 + 纯白字 + 强黄/青强调 + 清晰描边 + 关闭毛玻璃，便于弱光/视障场景
  * ========================================================== */
@@ -577,6 +665,11 @@ html[data-theme="contrast"] .page-bg .text-gray-200,
 html[data-theme="contrast"] .page-bg .text-gray-300,
 html[data-theme="contrast"] .page-bg .text-gray-400,
 html[data-theme="contrast"] .page-bg .text-gray-500 { color: #e6e6e6 !important; }
+/* 精修层的青/沙标签在高对比下回到清晰高对比色（避免暗青字叠黑底看不清）*/
+html[data-theme="contrast"] .page-bg .text-blue-300 { color: #4fd0ff !important; }
+html[data-theme="contrast"] .page-bg .text-purple-300 { color: #ffd60a !important; }
+html[data-theme="contrast"] .page-bg .bg-blue-500 { background-color: rgba(79, 208, 255, 0.18) !important; }
+html[data-theme="contrast"] .page-bg .bg-purple-500 { background-color: rgba(255, 214, 10, 0.18) !important; }
 html[data-theme="contrast"] .page-bg .history-title,
 html[data-theme="contrast"] .page-bg .close-btn { color: #ffffff !important; }
 html[data-theme="contrast"] #modal .detail-value,

@@ -38,12 +38,12 @@
         try { title = (document.getElementById('videoTitle') || {}).textContent || ''; } catch (e) {}
         return ANIME_RE.test(t + ' ' + title);
     }
-    // 「自动」路由：动画→Anime4K；低清实拍(≤576p)→降噪；高清实拍/未知→原画(off)
+    // 「自动」路由：动画→Anime4K；低清实拍(≤576p)→降噪；高清实拍/未知→轻度实拍超清
     function resolveAuto(art) {
         const sh = (art && art.video && art.video.videoHeight) || 0;
         if (classifyContent()) return 'a4k';
         if (sh && sh <= 576) return 'sr';
-        return 'off';
+        return 'clear';
     }
     function updateEnhanceTooltip(art, text) {
         try { art.setting.update({ name: 'enhance', tooltip: text }); } catch (e) {}

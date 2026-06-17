@@ -124,6 +124,9 @@
 
         // 切集/换源后视频元素的 filter 可能被重置，重新应用
         art.on('video:loadedmetadata', () => applyEnhance(art, getSavedEnhance()));
+        // 「自动」档实时重路由：真实分辨率确定/变化(resize)时，用当前分辨率重判增强档
+        // （resize 仅在分辨率真正变化时触发；applyEnhance 对 WebGL 幂等；手动档只是原样重应用）
+        if (art.video) art.video.addEventListener('resize', () => applyEnhance(art, getSavedEnhance()));
         // 播放器销毁时关闭 Anime4K 渲染循环
         try { art.on('destroy', () => global.Anime4K && global.Anime4K.disable()); } catch (e) {}
     }
@@ -256,46 +259,31 @@
         badgeEl.classList.toggle('is-enhanced', running);
     }
 
-    // 选高分辨率时确保 WebGL 增强在运行（否则纯放大只会更糊）；默认切到「实拍超清」
-    function ensureWebGL(art) {
-        const cur = getSavedEnhance();
-        if (presetByValue(cur).anime4k) return; // 已是 WebGL 模式
-        applyEnhance(art, 'clear');
-        saveEnhance('clear');
-        try {
-            art.setting.update({
-                name: 'enhance',
-                tooltip: presetByValue('clear').html,
-                selector: ENHANCE_PRESETS.map((p) => ({ html: p.html, value: p.value, default: p.value === 'clear' })),
-            });
-        } catch (e) {}
-    }
-
     // 初始化/更新「画质」设置项（每次 MANIFEST_PARSED 调用）。
-    // 始终存在：以「输出分辨率」为主（自动/源/1440P/2160P，驱动上采样），
-    // 当存在真实多码率档时再附上码率档供切换。
+    // 只管「真实码率档」：源真有多档(hls.levels>1)才出现，自动(ABR) + 各档切换；
+    // 单码率源不显示该项。不再混入"上采样目标"，也不再劫持「画质增强」。
     function updateQuality(art, hls) {
         if (!art || !art.setting) return;
-        const sh = (art.video && art.video.videoHeight) || 0;
-        const srcLabel = sh ? qualityLabel(sh) : '';
 
-        const selector = [
-            { html: '自动(增强到1440P)', value: 'auto', default: true },
-            { html: '源画质' + (srcLabel ? ` (${srcLabel})` : ''), value: 'src' },
-            { html: '1440P 增强', value: 'h:1440' },
-            { html: '2160P 增强', value: 'h:2160' },
-        ];
-
-        // 真实码率档（如有）
-        if (hls && Array.isArray(hls.levels) && hls.levels.length > 1) {
-            hls.levels
-                .map((lv, i) => ({ h: lv.height || 0, i }))
-                .sort((a, b) => b.h - a.h)
-                .forEach((it) => selector.push({
-                    html: '码率 ' + (it.h ? qualityLabel(it.h) : '档' + (it.i + 1)),
-                    value: 'lvl:' + it.i,
-                }));
+        // 单码率（多数采集站）：移除可能存在的旧「画质」项，避免残留混乱菜单
+        if (!hls || !Array.isArray(hls.levels) || hls.levels.length <= 1) {
+            if (qualityAdded) {
+                try { art.setting.remove && art.setting.remove('quality'); } catch (e) {}
+                qualityAdded = false;
+            }
+            return;
         }
+
+        const levels = hls.levels
+            .map((lv, i) => ({ h: lv.height || 0, i }))
+            .sort((a, b) => b.h - a.h);
+        const selector = [
+            { html: '自动', value: -1, default: true },
+            ...levels.map((it) => ({
+                html: it.h ? qualityLabel(it.h) : '档 ' + (it.i + 1),
+                value: it.i,
+            })),
+        ];
 
         const setting = {
             name: 'quality',
@@ -303,18 +291,7 @@
             tooltip: '自动',
             selector,
             onSelect: function (item) {
-                const v = String(item.value);
-                if (v === 'auto') {
-                    ensureWebGL(art);
-                    global.Anime4K && global.Anime4K.setTarget && global.Anime4K.setTarget('auto');
-                } else if (v === 'src') {
-                    global.Anime4K && global.Anime4K.setTarget && global.Anime4K.setTarget(0);
-                } else if (v.startsWith('h:')) {
-                    ensureWebGL(art);
-                    global.Anime4K && global.Anime4K.setTarget && global.Anime4K.setTarget(parseInt(v.slice(2), 10));
-                } else if (v.startsWith('lvl:') && hls) {
-                    hls.currentLevel = parseInt(v.slice(4), 10);
-                }
+                hls.currentLevel = parseInt(item.value, 10); // -1 = 自动 ABR
                 [120, 400, 900].forEach((t) => setTimeout(() => updateQualityBadge(art), t));
                 return item.html;
             },

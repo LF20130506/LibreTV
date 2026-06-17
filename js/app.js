@@ -1053,7 +1053,7 @@ function showVideoPlayer(url) {
     // 在框架中打开播放页面
     videoPlayerFrame = document.createElement('iframe');
     videoPlayerFrame.id = 'VideoPlayerFrame';
-    videoPlayerFrame.className = 'fixed w-full h-screen z-40';
+    videoPlayerFrame.className = 'fixed inset-0 w-full h-screen z-[60]';
     videoPlayerFrame.src = url;
     document.body.appendChild(videoPlayerFrame);
     // 将焦点移入iframe

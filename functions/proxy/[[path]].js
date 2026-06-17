@@ -487,8 +487,38 @@ export async function onRequest(context) {
             }
         }
 
-        // --- 实际请求 ---
-        const { content, contentType, responseHeaders } = await fetchContentWithType(targetUrl);
+        // --- 实际请求（二进制安全：图片/分片等原样透传字节，仅对 m3u8/文本做 text() 处理）---
+        const reqHeaders = new Headers({
+            'User-Agent': getRandomUserAgent(),
+            'Accept': '*/*',
+            'Accept-Language': request.headers.get('Accept-Language') || 'zh-CN,zh;q=0.9,en;q=0.8',
+            // Referer 设为目标自身 origin，利于绕过豆瓣等图片防盗链
+            'Referer': new URL(targetUrl).origin
+        });
+        const upstream = await fetch(targetUrl, { headers: reqHeaders, redirect: 'follow' });
+        if (!upstream.ok) {
+            return createResponse(`上游请求失败: ${upstream.status} ${upstream.statusText}`, upstream.status);
+        }
+        const ctypeRaw = upstream.headers.get('Content-Type') || '';
+        const urlIsM3u8 = /\.m3u8(\?|$)/i.test(targetUrl);
+        const isTextual = urlIsM3u8 ||
+            /mpegurl|^text\/|application\/(json|xml|x-mpegurl|vnd\.apple\.mpegurl)/i.test(ctypeRaw);
+
+        if (!isTextual) {
+            // 二进制内容（图片/视频分片/字幕/字体等）：原样流式透传，避免按文本读取损坏
+            const h = new Headers();
+            if (ctypeRaw) h.set('Content-Type', ctypeRaw);
+            const cl = upstream.headers.get('Content-Length'); if (cl) h.set('Content-Length', cl);
+            h.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
+            h.set('Access-Control-Allow-Origin', '*');
+            h.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, OPTIONS');
+            h.set('Access-Control-Allow-Headers', '*');
+            return new Response(upstream.body, { status: 200, headers: h });
+        }
+
+        const content = await upstream.text();
+        const contentType = ctypeRaw;
+        const responseHeaders = upstream.headers;
 
         // --- 写入缓存 (KV) ---
         if (kvNamespace) {

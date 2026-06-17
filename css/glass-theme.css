@@ -193,6 +193,15 @@ body.page-bg { color: var(--text-color); }
 /* ============================================================
  * 搜索框 —— 通透玻璃胶囊
  * ========================================================== */
+/* 内联播放器(iframe)打开时，隐藏首页所有悬浮元素，避免遮挡播放器 */
+body.player-active .fixed.top-4.left-4,
+body.player-active .fixed.top-4.right-4,
+body.player-active #searchArea,
+body.player-active #historyPanel,
+body.player-active #settingsPanel {
+    display: none !important;
+}
+
 /* 首页搜索区滑动时固定在顶部，滚动浏览结果/豆瓣时也能随时搜索 */
 #searchArea {
     position: sticky;

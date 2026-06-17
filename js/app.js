@@ -1050,6 +1050,9 @@ function showVideoPlayer(url) {
     // 临时隐藏搜索结果和豆瓣区域，防止高度超出播放器而出现滚动条
     document.getElementById('resultsArea').classList.add('hidden');
     document.getElementById('doubanArea').classList.add('hidden');
+    // 播放时隐藏首页所有悬浮元素（角标按钮/侧边面板/固定搜索栏），
+    // 避免它们因 z-index 浮在播放器之上遮挡播放器（如"回到主页"按钮）
+    document.body.classList.add('player-active');
     // 在框架中打开播放页面
     videoPlayerFrame = document.createElement('iframe');
     videoPlayerFrame.id = 'VideoPlayerFrame';
@@ -1063,6 +1066,7 @@ function showVideoPlayer(url) {
 // 关闭播放器页面
 function closeVideoPlayer(home = false) {
     videoPlayerFrame = document.getElementById('VideoPlayerFrame');
+    document.body.classList.remove('player-active'); // 恢复首页悬浮元素
     if (videoPlayerFrame) {
         videoPlayerFrame.remove();
         // 恢复搜索结果显示

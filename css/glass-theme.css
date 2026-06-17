@@ -193,6 +193,23 @@ body.page-bg { color: var(--text-color); }
 /* ============================================================
  * 搜索框 —— 通透玻璃胶囊
  * ========================================================== */
+/* 首页搜索区滑动时固定在顶部，滚动浏览结果/豆瓣时也能随时搜索 */
+#searchArea {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    width: 100%;
+    padding: 0.7rem 0 0.55rem;
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(160%);
+    border-bottom: 1px solid var(--glass-border);
+}
+/* 移动端：给顶部固定的历史/主题/设置角标按钮让出一行，避免与搜索行重叠 */
+@media (max-width: 640px) {
+    #searchArea { padding-top: 3.6rem; }
+}
+
 .flex.items-stretch.shadow-lg {
     border-radius: var(--radius-pill) !important;
     border: 1px solid var(--glass-border) !important;

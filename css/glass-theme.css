@@ -203,28 +203,30 @@ body.player-active #settingsPanel {
 }
 
 /* 首页搜索区滑动时固定在顶部，滚动浏览结果/豆瓣时也能随时搜索 */
+/* 首页搜索区滑动时固定在顶部——保持透明，只让玻璃搜索胶囊浮在最上层，
+   滚动的结果/海报从玻璃后透出（液态玻璃感），不做整条方框背景。 */
 #searchArea {
     position: sticky;
     top: 0;
     z-index: 30;
     width: 100%;
-    padding: 0.7rem 0 0.55rem;
-    background: var(--glass-bg-strong);
-    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(160%);
-    backdrop-filter: blur(var(--glass-blur-strong)) saturate(160%);
-    border-bottom: 1px solid var(--glass-border);
+    padding: 0.6rem 0 0.5rem;
+    background: transparent;
+    pointer-events: none; /* 让透明区不挡下方内容点击；胶囊自身恢复 */
 }
+#searchArea > * { pointer-events: auto; }
 /* 移动端：给顶部固定的历史/主题/设置角标按钮让出一行，避免与搜索行重叠 */
 @media (max-width: 640px) {
     #searchArea { padding-top: 3.6rem; }
 }
 
+/* 固定时的搜索胶囊：更实一点的磨砂，叠在滚动内容上文字依旧清晰 */
 .flex.items-stretch.shadow-lg {
     border-radius: var(--radius-pill) !important;
     border: 1px solid var(--glass-border) !important;
-    background: var(--glass-bg) !important;
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(185%) brightness(1.06);
-    backdrop-filter: blur(var(--glass-blur)) saturate(185%) brightness(1.06);
+    background: var(--glass-bg-strong) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(185%) brightness(1.05);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(185%) brightness(1.05);
     box-shadow: var(--glass-shadow);
     overflow: hidden;
 }
@@ -233,6 +235,42 @@ body.player-active #settingsPanel {
     border-color: transparent !important;
 }
 #searchInput::placeholder { color: var(--text-muted); }
+
+/* ============================================================
+ * 播放页 ArtPlayer 设置/菜单 —— 深色液态玻璃（播放页为深色，用深玻璃）
+ * ========================================================== */
+.art-video-player .art-settings,
+.art-video-player .art-contextmenus,
+.art-video-player .art-selector-list,
+.art-video-player .art-info,
+.art-video-player .art-subtitle-panel {
+    background: rgba(16, 20, 27, 0.66) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
+    backdrop-filter: blur(20px) saturate(170%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+    overflow: hidden;
+}
+/* 菜单项圆角高亮 + 顺滑过渡 */
+.art-video-player .art-setting-item,
+.art-video-player .art-selector-item,
+.art-video-player .art-contextmenu {
+    border-radius: 10px !important;
+    transition: background-color 0.2s ease !important;
+}
+.art-video-player .art-setting-item:hover,
+.art-video-player .art-selector-item:hover,
+.art-video-player .art-contextmenu:hover {
+    background: rgba(255, 255, 255, 0.10) !important;
+}
+/* 选中态用海水青点缀 */
+.art-video-player .art-setting-item-right .art-current,
+.art-video-player .art-selector-item.art-current {
+    color: #4fcad9 !important;
+}
+
 
 /* 搜索历史标签 */
 .search-tag {

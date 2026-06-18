@@ -22,15 +22,15 @@
     --card-accent: rgba(31, 179, 196, 0.10);
     --card-hover-border: rgba(31, 179, 196, 0.45);
 
-    /* —— 液态玻璃变量（暖白玻璃，降不透明度让磨砂可见）—— */
-    --glass-bg: rgba(255, 254, 250, 0.42);       /* 玻璃主体（更通透，透出海天辉光）*/
-    --glass-bg-strong: rgba(255, 254, 250, 0.62); /* 更实的玻璃（弹窗/面板，文字可读）*/
-    --glass-bg-soft: rgba(231, 245, 244, 0.50);  /* 浅海泡沫（内嵌块）*/
-    --glass-border: rgba(60, 110, 110, 0.16);    /* 可见的浅色描边 */
+    /* —— 液态玻璃变量：磨砂(填充)≤15%，主要靠强模糊透出背景，而非糊一层厚磨砂 —— */
+    --glass-bg: rgba(255, 254, 250, 0.10);       /* 玻璃主体（高度通透）*/
+    --glass-bg-strong: rgba(255, 254, 250, 0.15); /* 弹窗/面板（最多 15% 磨砂）*/
+    --glass-bg-soft: rgba(231, 245, 244, 0.08);  /* 内嵌块（更淡）*/
+    --glass-border: rgba(60, 110, 110, 0.18);    /* 可见的浅色描边 */
     --glass-border-strong: rgba(31, 179, 196, 0.55);
-    --glass-highlight: rgba(255, 255, 255, 0.95); /* 更亮顶高光 */
-    --glass-blur: 18px;
-    --glass-blur-strong: 28px;
+    --glass-highlight: rgba(255, 255, 255, 0.85); /* 顶部高光 */
+    --glass-blur: 24px;                           /* 加大模糊补足玻璃质感 */
+    --glass-blur-strong: 38px;
     /* 分层"漂浮玻璃"：彩色投影 + 亮顶高光 + 内白玻璃缘 */
     --glass-shadow: 0 10px 30px rgba(35, 95, 105, 0.18), 0 2px 8px rgba(35, 95, 105, 0.10), inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 
@@ -244,9 +244,9 @@ body.player-active #settingsPanel {
 .art-video-player .art-selector-list,
 .art-video-player .art-info,
 .art-video-player .art-subtitle-panel {
-    background: rgba(16, 20, 27, 0.66) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
-    backdrop-filter: blur(20px) saturate(170%) !important;
+    background: rgba(16, 20, 27, 0.15) !important;
+    -webkit-backdrop-filter: blur(34px) saturate(180%) !important;
+    backdrop-filter: blur(34px) saturate(180%) !important;
     border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 16px !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5),

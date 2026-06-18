@@ -193,14 +193,29 @@
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     }
 
+    // 设备实际可显示的像素高度上限（播放区高度 × devicePixelRatio）。
+    // 超过这个就是白渲染——屏幕显示不出更多像素，只会徒增 GPU 负载。
+    function deviceCapHeight() {
+        const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+        let cssH = 0;
+        if (canvas && canvas.clientHeight) cssH = canvas.clientHeight;
+        if (!cssH && videoEl && videoEl.clientHeight) cssH = videoEl.clientHeight;
+        if (!cssH) cssH = (window.screen && window.screen.height) || 1080;
+        return Math.round(cssH * dpr);
+    }
+
     // 计算增强输出尺寸。target='auto' 时低于 1440p 的源上采样到 1440p；
-    // target=0 用源画质；target=数字 用指定高度（可上/降采样，由用户在「画质」中选择）。
+    // target=0 用源画质；target=数字 用指定高度。最终再按设备可显示像素封顶，
+    // 避免在小屏上盲目渲染 2160p 大缓冲拖卡（画面一样清晰，GPU 负载大降）。
     function computeOutput(sw, sh) {
         if (!sw || !sh) return [0, 0];
         let th;
         if (targetSetting === 'auto') th = sh < 1440 ? 1440 : sh;
         else if (targetSetting === 0) th = sh;
         else th = Math.max(144, targetSetting);
+        // 按设备像素封顶（但不低于源高度，避免把源降采样得更糊）
+        const cap = deviceCapHeight();
+        if (cap > 0) th = Math.min(th, Math.max(sh, cap));
         const scale = th / sh;
         return [Math.max(1, Math.round(sw * scale)), th];
     }

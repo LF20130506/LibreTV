@@ -236,6 +236,17 @@ body.player-active #settingsPanel {
 }
 #searchInput::placeholder { color: var(--text-muted); }
 
+/* LibreTV 标志后的毛玻璃底板（圆角 6.618）*/
+.page-bg .logo-glass {
+    padding: 0.5rem 1.1rem;
+    border-radius: 6.618px;
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
 /* ============================================================
  * 播放页 ArtPlayer 设置/菜单 —— 深色液态玻璃（播放页为深色，用深玻璃）
  * ========================================================== */

@@ -782,8 +782,12 @@ class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
                 callbacks.onSuccess = function (response, stats, context) {
                     // 如果是m3u8文件，处理内容以移除广告分段
                     if (response.data && typeof response.data === 'string') {
-                        // 过滤掉广告段 - 实现更精确的广告过滤逻辑
-                        response.data = filterAdsFromM3U8(response.data, true);
+                        // 过滤掉广告段 - 实现更精确的广告过滤逻辑（失败则原样播放，绝不卡死）
+                        try {
+                            response.data = filterAdsFromM3U8(response.data, true);
+                        } catch (e) {
+                            console.warn('[AdFilter] 过滤失败，原样播放:', e && e.message);
+                        }
                     }
                     return onSuccess(response, stats, context);
                 };
@@ -822,6 +826,10 @@ function filterAdsFromM3U8(m3u8Content, strictMode = false) {
         return lines.filter((l) => !l.includes('#EXT-X-DISCONTINUITY')).join('\n');
     }
 
+    // 同源(同 host/目录)也能命中的广告 URL 特征：路径里带 /ad//ads/、广告、guanggao 等。
+    // 用斜杠/分隔符做边界，避免误伤 upload、load、broadcast 等正常词。
+    const AD_URL_RE = /(?:\/|_|-)ad(?:s|v|vert)?(?:\/|_|-|\.)|广告|guang_?gao/i;
+
     const header = lines.slice(0, firstInf);
     const blocks = [];           // 每块 = 标签行 + 该分片URI
     let cur = [];
@@ -829,7 +837,7 @@ function filterAdsFromM3U8(m3u8Content, strictMode = false) {
         const raw = lines[i];
         const t = raw.trim();
         cur.push(raw);
-        if (t && !t.startsWith('#')) { blocks.push({ lines: cur, key: segKey(t) }); cur = []; }
+        if (t && !t.startsWith('#')) { blocks.push({ lines: cur, key: segKey(t), uri: t }); cur = []; }
     }
     const tail = cur;            // #EXT-X-ENDLIST 等尾行
 
@@ -839,12 +847,18 @@ function filterAdsFromM3U8(m3u8Content, strictMode = false) {
     let majKey = blocks[0].key, majN = 0;
     for (const k in count) if (count[k] > majN) { majN = count[k]; majKey = k; }
     const dropFrac = (blocks.length - majN) / blocks.length;
-    // 保守：异源占比 >40% 不敢删（怕误删正片），退回仅去 discontinuity
-    const removeAds = dropFrac > 0 && dropFrac <= 0.4;
+    // 保守：异源占比 >40% 不敢按"异源"删（怕误删正片），退回仅去 discontinuity；
+    // 但 URL 明显是广告的分片(AD_URL_RE)无论占比都删——这是强信号、误伤极低。
+    const removeBySource = dropFrac > 0 && dropFrac <= 0.4;
+
+    const adFlags = blocks.map((b) =>
+        (removeBySource && b.key !== majKey) || AD_URL_RE.test(b.uri));
+    // 安全阀：若判定会把整张列表删空(极端误判)，则不按广告删，避免没得播
+    const reallyFilter = adFlags.some((f) => !f);
 
     const out = header.slice();
-    blocks.forEach((b) => {
-        if (removeAds && b.key !== majKey) return; // 丢弃广告块
+    blocks.forEach((b, i) => {
+        if (reallyFilter && adFlags[i]) return; // 丢弃广告块
         b.lines.forEach((l) => { if (!l.includes('#EXT-X-DISCONTINUITY')) out.push(l); });
     });
     tail.forEach((l) => { if (!l.includes('#EXT-X-DISCONTINUITY')) out.push(l); });

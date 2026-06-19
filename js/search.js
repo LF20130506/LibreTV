@@ -1,13 +1,35 @@
+// 源健康记录：连续失败的源在冷却期内跳过，避免每次搜索都被死源拖慢（冷却到期自动重试自愈）
+(function (g) {
+    const HKEY = 'sourceHealth';
+    const FAIL_THRESHOLD = 3;
+    const COOLDOWN_MS = 10 * 60 * 1000; // 10 分钟
+    function load() { try { return JSON.parse(localStorage.getItem(HKEY) || '{}'); } catch (e) { return {}; } }
+    function save(h) { try { localStorage.setItem(HKEY, JSON.stringify(h)); } catch (e) {} }
+    g.recordSourceHealth = function (id, ok) {
+        if (!id) return;
+        const h = load();
+        const r = h[id] || { fail: 0, lastFail: 0, lastOk: 0 };
+        const now = Date.now();
+        if (ok) { r.fail = 0; r.lastOk = now; } else { r.fail = (r.fail || 0) + 1; r.lastFail = now; }
+        h[id] = r; save(h);
+    };
+    g.isSourceLikelyDead = function (id) {
+        const r = load()[id];
+        if (!r) return false;
+        return (r.fail || 0) >= FAIL_THRESHOLD && (Date.now() - (r.lastFail || 0)) < COOLDOWN_MS;
+    };
+})(window);
+
 async function searchByAPIAndKeyWord(apiId, query) {
     try {
         let apiUrl, apiName, apiBaseUrl;
-        
+
         // 处理自定义API
         if (apiId.startsWith('custom_')) {
             const customIndex = apiId.replace('custom_', '');
             const customApi = getCustomApiInfo(customIndex);
             if (!customApi) return [];
-            
+
             apiBaseUrl = customApi.url;
             apiUrl = apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
             apiName = customApi.name;
@@ -18,24 +40,26 @@ async function searchByAPIAndKeyWord(apiId, query) {
             apiUrl = apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
             apiName = API_SITES[apiId].name;
         }
-        
-        // 添加超时处理
+
+        // 添加超时处理（5s，比原 8s 更快放弃死源）
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
-        
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         const response = await fetch(PROXY_URL + encodeURIComponent(apiUrl), {
             headers: API_CONFIG.search.headers,
             signal: controller.signal
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) {
+            window.recordSourceHealth(apiId, false);
             return [];
         }
-        
+
         const data = await response.json();
-        
+        window.recordSourceHealth(apiId, true); // 有响应即视为存活（空结果也算活）
+
         if (!data || !data.list || !Array.isArray(data.list) || data.list.length === 0) {
             return [];
         }
@@ -112,6 +136,7 @@ async function searchByAPIAndKeyWord(apiId, query) {
         return results;
     } catch (error) {
         console.warn(`API ${apiId} 搜索失败:`, error);
+        window.recordSourceHealth(apiId, false);
         return [];
     }
 }

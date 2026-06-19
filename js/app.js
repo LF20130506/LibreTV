@@ -642,17 +642,27 @@ async function search() {
         // 保存搜索历史
         saveSearchHistory(query);
 
-        // 从所有选中的API源搜索
+        // 跳过近期连续失效的源（冷却期内），避免被死源拖慢；若全被跳过则回退用全部
+        let sourcesToSearch = selectedAPIs;
+        if (typeof window.isSourceLikelyDead === 'function') {
+            const alive = selectedAPIs.filter(id => !window.isSourceLikelyDead(id));
+            const skipped = selectedAPIs.length - alive.length;
+            if (alive.length > 0) {
+                sourcesToSearch = alive;
+                if (skipped > 0) showToast(`已跳过 ${skipped} 个暂不可用的源`, 'info');
+            }
+            // alive 为空：整体可能网络抖动，回退用 selectedAPIs（不致零结果）
+        }
+
+        // 从选中的API源搜索（allSettled 更稳：单源失败不影响整体）
         let allResults = [];
-        const searchPromises = selectedAPIs.map(apiId => 
-            searchByAPIAndKeyWord(apiId, query)
+        const resultsArray = await Promise.allSettled(
+            sourcesToSearch.map(apiId => searchByAPIAndKeyWord(apiId, query))
         );
 
-        // 等待所有搜索请求完成
-        const resultsArray = await Promise.all(searchPromises);
-
         // 合并所有结果
-        resultsArray.forEach(results => {
+        resultsArray.forEach(r => {
+            const results = r.status === 'fulfilled' ? r.value : [];
             if (Array.isArray(results) && results.length > 0) {
                 allResults = allResults.concat(results);
             }

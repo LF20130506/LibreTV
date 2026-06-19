@@ -57,6 +57,21 @@
         radial-gradient(95vw 55vw at 50% 120%, rgba(31, 179, 196, 0.24), transparent 64%),   /* 底部海水 */
         radial-gradient(52vw 52vw at 88% -12%, rgba(242, 166, 90, 0.20), transparent 60%);   /* 右上暖阳 */
 }
+/* 背景椰子树🌴：固定右下、低透明、置于内容之后 */
+.bg-palm {
+    position: fixed;
+    right: 1vw;
+    bottom: 0;
+    width: min(34vw, 300px);
+    height: auto;
+    z-index: -1;
+    opacity: 0.16;
+    pointer-events: none;
+    user-select: none;
+}
+@media (max-width: 640px) {
+    .bg-palm { width: 50vw; opacity: 0.13; }
+}
 
 /* ============================================================
  * 亮色主题：把「深底白字」翻转为白底深字（用 !important 压过 Tailwind）。
@@ -663,11 +678,11 @@ body.page-bg {
 .page-bg header button, .page-bg .home-btn { box-shadow: var(--elev-1) !important; }
 .page-bg header button:hover, .page-bg .home-btn:hover { box-shadow: var(--elev-2) !important; }
 
-/* 3) 配色统一到海滩调（覆盖杂色 pink/blue） */
-/* 豆瓣开关/刷新/标签：粉 → 海蓝主色 */
+/* 3) 把原来的粉色(豆瓣等)统一换成椰子树🌴绿（主青色主题不变；蓝/紫见下）*/
+/* .douban-* (index.css) 兜底 → 绿 */
 .page-bg .douban-toggle-button.active,
-.page-bg .douban-refresh-button { background: var(--primary-color) !important; color: #fff !important; }
-.page-bg .douban-refresh-button:hover { background: var(--primary-light) !important; }
+.page-bg .douban-refresh-button { background: #2f9e5c !important; color: #fff !important; }
+.page-bg .douban-refresh-button:hover { background: #268049 !important; }
 .page-bg .douban-tag,
 .page-bg .recent-search-tag {
     background: var(--glass-bg-soft) !important;
@@ -678,8 +693,18 @@ body.page-bg {
 .page-bg .douban-tag:hover,
 .page-bg .recent-search-tag:hover { border-color: var(--glass-border-strong) !important; }
 .page-bg .douban-tag.active {
-    background: var(--primary-color) !important; border-color: var(--primary-color) !important; color: #fff !important;
+    background: #2f9e5c !important; border-color: #2f9e5c !important; color: #fff !important;
 }
+/* 实际豆瓣元素用的 Tailwind 粉色类 → 椰子树绿 */
+.page-bg .bg-pink-600 { background-color: #2f9e5c !important; }
+.page-bg .bg-pink-500 { background-color: #38ab66 !important; }
+.page-bg .hover\:bg-pink-700:hover { background-color: #268049 !important; }
+.page-bg .text-pink-300 { color: #93d8ac !important; }
+.page-bg .text-pink-400 { color: #5cbf86 !important; }
+.page-bg .text-pink-500 { color: #2f9e5c !important; }
+.page-bg .text-pink-600 { color: #268049 !important; }
+.page-bg .hover\:text-pink-400:hover { color: #5cbf86 !important; }
+.page-bg .border-pink-500, .page-bg .border-pink-600 { border-color: #38ab66 !important; }
 /* 结果卡片类型/年份标签：蓝/紫 → 青(类型)/沙(年份) 淡色 pill */
 .page-bg .bg-blue-500 { background-color: rgba(31, 179, 196, 0.16) !important; }
 .page-bg .text-blue-300 { color: #1391a0 !important; }

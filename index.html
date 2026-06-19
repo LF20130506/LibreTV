@@ -20,6 +20,20 @@
     <script>try{var t=localStorage.getItem('ltTheme');document.documentElement.setAttribute('data-theme', t==='contrast'?'contrast':'seaside');}catch(e){document.documentElement.setAttribute('data-theme','seaside');}</script>
 </head>
 <body class="page-bg text-white">
+    <!-- 背景装饰：椰子树🌴（固定在右下角，低透明度，置于内容之后）-->
+    <svg class="bg-palm" viewBox="0 0 220 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M120 256 C112 200 104 150 116 104 C120 132 126 196 132 256 Z" fill="#9c6b3f"/>
+        <g fill="#2f9e5c">
+            <path d="M118 100 C78 78 44 80 18 102 C52 90 86 92 120 108 Z"/>
+            <path d="M120 100 C160 76 196 78 210 100 C178 88 150 92 122 108 Z"/>
+            <path d="M118 98 C88 58 56 44 28 44 C66 52 96 72 120 106 Z"/>
+            <path d="M120 98 C150 56 182 42 208 44 C172 52 144 72 122 106 Z"/>
+            <path d="M119 96 C110 54 114 28 130 10 C120 40 122 70 122 104 Z"/>
+        </g>
+        <circle cx="110" cy="106" r="7" fill="#6b4423"/>
+        <circle cx="128" cy="108" r="7" fill="#6b4423"/>
+        <circle cx="119" cy="114" r="6.5" fill="#5a3a1e"/>
+    </svg>
     <!-- 将历史记录按钮移到左上角，并缩小尺寸 -->
     <div class="fixed top-4 left-4 z-50 flex gap-2">
         <button onclick="toggleHistory(event)" class="bg-[#222] hover:bg-[#333] border border-[#333] hover:border-white rounded-lg px-3 py-1.5 transition-colors" aria-label="观看历史">

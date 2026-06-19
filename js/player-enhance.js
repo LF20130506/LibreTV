@@ -95,8 +95,10 @@
     }
 
     // ===== 画质 = 输出分辨率目标（单码率源也始终可改）=====
-    // 与「画质增强」算法解耦：'auto'/'source' 沿用增强设置；选更高分辨率则用
-    // 锐利上采样（动画→Anime4K，实拍→实拍超清 CAS），绝不走会发柔的「降噪」档。
+    // 与「画质增强」算法解耦：'auto'/'源画质' 沿用增强设置；选更高分辨率(1440P/4K)时——
+    // 动画→Anime4K 上采样；实拍(纪录片/电影)→「实拍超清」(CAS)上采样。
+    // 注意：实拍用的是 CAS 锐化式上采样，不是 Anime4K 的线条加深——线条加深才会让实拍发糊，
+    // CAS 是按对比度自适应锐化、放大到目标分辨率，正是实拍要的"锐化 + 增强到 2K/4K"。
     const LS_QTARGET = 'playerQualityTarget';
     const QTARGETS = [
         { html: '自动',   value: 'auto' },
@@ -123,7 +125,8 @@
         if (target === 'auto' || target === 'source') {
             applyEnhance(art, getSavedEnhance());                       // 沿用增强设置（含自动路由）
         } else {
-            applyEnhance(art, classifyContent() ? 'a4k' : 'clear');     // 上采样到目标，锐利不发柔
+            // 动画→Anime4K 上采样；实拍→实拍超清(CAS)上采样到 2K/4K（非 Anime4K 线条加深）
+            applyEnhance(art, classifyContent() ? 'a4k' : 'clear');
         }
     }
 

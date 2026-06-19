@@ -214,18 +214,25 @@
         return Math.round(cssH * dpr);
     }
 
-    // 计算增强输出尺寸。target='auto' 时低于 1440p 的源上采样到 1440p；
-    // target=0 用源画质；target=数字 用指定高度。最终再按设备可显示像素封顶，
-    // 避免在小屏上盲目渲染 2160p 大缓冲拖卡（画面一样清晰，GPU 负载大降）。
+    // 计算增强输出尺寸。
+    //  · target='auto'：低于 1440p 的源上采样到 1440p，并按设备可显示像素封顶——
+    //    自动档要省 GPU、防止设置菜单卡顿，所以不在小屏上盲目渲染超大缓冲。
+    //  · target=0（源画质）：用源高度。
+    //  · target=数字（用户显式选 1440P/4K）：尊重用户选择，渲染到该分辨率（超采样更锐，
+    //    再由浏览器缩放到屏幕），不按屏幕封顶——否则手机上选 4K 会被悄悄降回 ~1080p，
+    //    用户会觉得"增强到 2K/4K 没生效"。仅做 2160 的安全上限防止极端负载。
     function computeOutput(sw, sh) {
         if (!sw || !sh) return [0, 0];
         let th;
-        if (targetSetting === 'auto') th = sh < 1440 ? 1440 : sh;
-        else if (targetSetting === 0) th = sh;
-        else th = Math.max(144, targetSetting);
-        // 按设备像素封顶（但不低于源高度，避免把源降采样得更糊）
-        const cap = deviceCapHeight();
-        if (cap > 0) th = Math.min(th, Math.max(sh, cap));
+        if (targetSetting === 'auto') {
+            th = sh < 1440 ? 1440 : sh;
+            const cap = deviceCapHeight();
+            if (cap > 0) th = Math.min(th, Math.max(sh, cap)); // 自动档按设备像素封顶
+        } else if (targetSetting === 0) {
+            th = sh;
+        } else {
+            th = Math.min(2160, Math.max(144, targetSetting)); // 显式目标：尊重选择，不按屏幕封顶
+        }
         const scale = th / sh;
         return [Math.max(1, Math.round(sw * scale)), th];
     }

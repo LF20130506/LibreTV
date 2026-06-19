@@ -7,27 +7,27 @@
  */
 
 :root {
-    /* —— 椰子树🌴绿配色：暖象牙白 + 棕榈绿 + 暖阳沙 —— */
-    --primary-color: #3fa86a;        /* 棕榈绿（主色）*/
-    --primary-light: #62c98c;        /* 浅棕榈绿 */
+    /* —— 休闲海滩🏖️配色：暖象牙白 + 热带海水青 + 暖阳沙 —— */
+    --primary-color: #1fb3c4;        /* 热带海水青（主色）*/
+    --primary-light: #5fcdd9;        /* 浅海泡沫青 */
     --secondary-color: #fdfaf3;      /* 暖象牙白 */
     --accent-color: #f2a65a;         /* 暖阳沙（点缀）*/
     --text-color: #35403e;           /* 暖深灰（正文）*/
     --text-muted: #6b7b78;           /* 海雾暖灰 */
     --border-color: rgba(60, 110, 110, 0.16);
     --page-gradient-start: #fdfcf6;  /* 顶部暖象牙 */
-    --page-gradient-end: #d8efdf;    /* 底部浅棕榈绿 */
+    --page-gradient-end: #d6eef0;    /* 底部浅海蓝绿 */
     --card-gradient-start: #fffefb;
     --card-gradient-end: #ecf8f7;
-    --card-accent: rgba(63, 168, 106, 0.10);
-    --card-hover-border: rgba(63, 168, 106, 0.45);
+    --card-accent: rgba(31, 179, 196, 0.10);
+    --card-hover-border: rgba(31, 179, 196, 0.45);
 
     /* —— 液态玻璃变量：磨砂(填充)≤15%，主要靠强模糊透出背景，而非糊一层厚磨砂 —— */
     --glass-bg: rgba(255, 254, 250, 0.10);       /* 玻璃主体（高度通透）*/
     --glass-bg-strong: rgba(255, 254, 250, 0.15); /* 弹窗/面板（最多 15% 磨砂）*/
     --glass-bg-soft: rgba(231, 245, 244, 0.08);  /* 内嵌块（更淡）*/
     --glass-border: rgba(60, 110, 110, 0.18);    /* 可见的浅色描边 */
-    --glass-border-strong: rgba(63, 168, 106, 0.55);
+    --glass-border-strong: rgba(31, 179, 196, 0.55);
     --glass-highlight: rgba(255, 255, 255, 0.85); /* 顶部高光 */
     --glass-blur: 24px;                           /* 加大模糊补足玻璃质感 */
     --glass-blur-strong: 38px;
@@ -54,7 +54,7 @@
     pointer-events: none;
     z-index: -1;
     background:
-        radial-gradient(95vw 55vw at 50% 120%, rgba(63, 168, 106, 0.24), transparent 64%),   /* 底部海水 */
+        radial-gradient(95vw 55vw at 50% 120%, rgba(31, 179, 196, 0.24), transparent 64%),   /* 底部海水 */
         radial-gradient(52vw 52vw at 88% -12%, rgba(242, 166, 90, 0.20), transparent 60%);   /* 右上暖阳 */
 }
 
@@ -279,7 +279,7 @@ body.player-active #settingsPanel {
 /* 选中态用海水青点缀 */
 .art-video-player .art-setting-item-right .art-current,
 .art-video-player .art-selector-item.art-current {
-    color: #62c98c !important;
+    color: #4fcad9 !important;
 }
 
 
@@ -367,7 +367,7 @@ body.player-active #settingsPanel {
  * ========================================================== */
 .page-bg button.bg-gradient-to-r {
     /* 覆盖 Tailwind 的 indigo→purple→pink，改为海蓝渐变 */
-    background-image: linear-gradient(135deg, #3fa86a, #62c98c) !important;
+    background-image: linear-gradient(135deg, #1fb3c4, #5fcdd9) !important;
     border-radius: var(--radius-md) !important;
     box-shadow: 0 6px 16px rgba(60, 120, 115, 0.20),
                 inset 0 1px 0 var(--glass-highlight);
@@ -375,7 +375,7 @@ body.player-active #settingsPanel {
     overflow: hidden;
 }
 .page-bg button.bg-gradient-to-r:hover {
-    background-image: linear-gradient(135deg, #4cb87a, #7fd6a0) !important;
+    background-image: linear-gradient(135deg, #2cc2d2, #74dbe6) !important;
 }
 
 /* 输入框玻璃化（浏览页）*/
@@ -480,7 +480,7 @@ body.player-active #settingsPanel {
     border: 1px solid var(--glass-border-strong);
     transition: all 0.2s ease;
 }
-.wp-link:hover { background: rgba(63, 168, 106, 0.14); }
+.wp-link:hover { background: rgba(31, 179, 196, 0.14); }
 .wp-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .wp-chip {
     display: inline-flex;
@@ -520,14 +520,14 @@ body.player-active #settingsPanel {
 /* 增强态：柔和青瓷描边，区别于源画质 */
 .lt-quality-badge.is-enhanced {
     color: #e8f3f1;
-    border-color: rgba(63, 168, 106, 0.60);
-    background: linear-gradient(135deg, rgba(63, 168, 106, 0.42), rgba(98, 201, 140, 0.42));
+    border-color: rgba(31, 179, 196, 0.60);
+    background: linear-gradient(135deg, rgba(31, 179, 196, 0.42), rgba(91, 188, 217, 0.42));
 }
 /* 4K / 8K 用暖陶土点缀高亮 */
 .lt-quality-badge.is-uhd {
     color: #fff;
     border-color: var(--accent-color);
-    background: linear-gradient(135deg, rgba(242, 166, 90, 0.65), rgba(63, 168, 106, 0.55));
+    background: linear-gradient(135deg, rgba(242, 166, 90, 0.65), rgba(31, 179, 196, 0.55));
     box-shadow: 0 2px 9px rgba(242, 166, 90, 0.30);
 }
 @media (max-width: 640px) {
@@ -582,7 +582,7 @@ body.player-active #settingsPanel {
     color: #fff;
     border-radius: var(--radius-pill);
     border: 1px solid var(--glass-border-strong);
-    background: rgba(63, 168, 106, 0.14);
+    background: rgba(31, 179, 196, 0.14);
     transition: all 0.2s ease;
 }
 .lt-dl-cancel:hover { background: rgba(242, 166, 90, 0.20); border-color: var(--accent-color); }
@@ -681,7 +681,7 @@ body.page-bg {
     background: var(--primary-color) !important; border-color: var(--primary-color) !important; color: #fff !important;
 }
 /* 结果卡片类型/年份标签：蓝/紫 → 青(类型)/沙(年份) 淡色 pill */
-.page-bg .bg-blue-500 { background-color: rgba(63, 168, 106, 0.16) !important; }
+.page-bg .bg-blue-500 { background-color: rgba(31, 179, 196, 0.16) !important; }
 .page-bg .text-blue-300 { color: #1391a0 !important; }
 .page-bg .bg-purple-500 { background-color: rgba(242, 166, 90, 0.18) !important; }
 .page-bg .text-purple-300 { color: #b06f2e !important; }

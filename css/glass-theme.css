@@ -270,16 +270,28 @@ body.player-active #settingsPanel {
 .art-video-player .art-selector-list,
 .art-video-player .art-info,
 .art-video-player .art-subtitle-panel {
-    background: rgba(16, 20, 27, 0.15) !important;
-    -webkit-backdrop-filter: blur(34px) saturate(180%) !important;
-    backdrop-filter: blur(34px) saturate(180%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    /* 播放器叠在视频上：菜单需足够不透明才看得清/点得准——
+       过去用 15% 磨砂(为亮色浏览页定的规则)在深色画面上几乎看不见，导致"无法选择"。
+       这里用较实的深色玻璃保证可读性，仍保留模糊的玻璃质感。 */
+    background: rgba(20, 24, 32, 0.82) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(150%) !important;
+    backdrop-filter: blur(26px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
     border-radius: 16px !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
-    /* 横向裁切到圆角，纵向可滚动——否则菜单项多时(画质/增强/画面比例…)会被裁掉够不到 */
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+    color: #f3f5f8 !important;
+    /* 横向裁切到圆角，纵向可滚动——否则菜单项多时(画质/增强…)会被裁掉够不到 */
     overflow-x: hidden;
     overflow-y: auto;
+}
+/* 菜单文字统一亮色，保证在深色玻璃上清晰可读 */
+.art-video-player .art-setting-item,
+.art-video-player .art-selector-item,
+.art-video-player .art-contextmenu,
+.art-video-player .art-setting-item-left,
+.art-video-player .art-setting-item-right {
+    color: #f3f5f8 !important;
 }
 /* 菜单项圆角高亮 + 顺滑过渡 */
 .art-video-player .art-setting-item,

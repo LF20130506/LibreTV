@@ -38,14 +38,15 @@
         try { title = (document.getElementById('videoTitle') || {}).textContent || ''; } catch (e) {}
         return ANIME_RE.test(t + ' ' + title);
     }
-    // 「自动」路由：动画→Anime4K；低清实拍(≤576p)→降噪；高清实拍/未知→标准 CSS 锐化
-    // （高清用 CSS 'standard' 而非重型 WebGL 'clear'，避免逐帧 WebGL 拖卡播放器/设置；
-    //   想要更强清晰度手动选「实拍超清」或「强」）
+    // 「自动」路由：动画→Anime4K；低清实拍(≤576p)→降噪；高清实拍/未知→CSS 锐化。
+    // 高清用 CSS 锐化（而非重型 WebGL）避免逐帧 WebGL 拖卡播放器/设置；其锐化档位
+    // 跟随「增强强度」滑块：弱→轻度、默认→标准、强→强，让自动锐化强度也可调。
     function resolveAuto(art) {
         const sh = (art && art.video && art.video.videoHeight) || 0;
         if (classifyContent()) return 'a4k';
         if (sh && sh <= 576) return 'sr';
-        return 'standard';
+        const s = getStrength();
+        return s >= 1.25 ? 'strong' : (s >= 0.85 ? 'standard' : 'light');
     }
     function updateEnhanceTooltip(art, text) {
         try { art.setting.update({ name: 'enhance', tooltip: text }); } catch (e) {}
@@ -196,7 +197,7 @@
         strengthPanel.innerHTML =
             '<div class="lt-sp-label">增强强度 <span class="lt-sp-val">' + cur.toFixed(2) + '</span></div>' +
             '<input class="lt-sp-range" type="range" min="0.3" max="1.8" step="0.05" value="' + cur + '">' +
-            '<div class="lt-sp-hint">对 Anime4K / 超分 生效</div>';
+            '<div class="lt-sp-hint">对增强生效（含自动锐化）</div>';
         parent.appendChild(strengthPanel);
 
         const range = strengthPanel.querySelector('.lt-sp-range');
@@ -205,8 +206,10 @@
             const v = parseFloat(range.value);
             val.textContent = v.toFixed(2);
             saveStrength(v);
-            if (global.Anime4K) global.Anime4K.setStrength(v);
+            if (global.Anime4K) global.Anime4K.setStrength(v); // WebGL 档实时生效
         });
+        // 松手后重应用一次：让「自动」的 CSS 锐化档位(轻/标/强)随强度切换
+        range.addEventListener('change', () => applyCurrent(art));
         // 防止滑块上的手势冒泡到播放器（快进/暂停）
         ['click', 'mousedown', 'touchstart', 'dblclick'].forEach((ev) =>
             strengthPanel.addEventListener(ev, (e) => e.stopPropagation()));

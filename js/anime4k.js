@@ -108,9 +108,9 @@
         float detail = lc - blur;
         float sharp = clamp(lc + uSharp * detail, mn, mx);
 
-        // 线条加深：在高对比边缘处把亮度往邻域最暗拉（只变暗）
+        // 线条加深：在高对比边缘处把亮度往邻域最暗拉（只变暗）；混合系数钳到[0,1]防过冲
         float edge = clamp((mx - mn) * 2.0, 0.0, 1.0);
-        float outL = mix(sharp, min(sharp, mn), uLine * edge);
+        float outL = mix(sharp, min(sharp, mn), clamp(uLine * edge, 0.0, 1.0));
 
         // 把亮度变化按比例施加到颜色上，保持色相
         float ratio = outL / max(lc, 1e-4);
@@ -156,6 +156,16 @@
             'pointer-events:none;z-index:11;';
         gl = canvas.getContext('webgl2', { alpha: false, premultipliedAlpha: false, antialias: false });
         if (!gl) throw new Error('WebGL2 不可用');
+
+        // WebGL 上下文丢失(GPU 复位/长时间后台)时优雅降级：停渲染、清掉旧资源，
+        // 下次 enable() 会重建上下文；视频本身始终在底层正常播放，不会卡死黑屏。
+        canvas.addEventListener('webglcontextlost', function (e) {
+            e.preventDefault();
+            disable();
+            try { if (resizeObs) resizeObs.disconnect(); } catch (_) {}
+            try { if (canvas && canvas.parentElement) canvas.parentElement.removeChild(canvas); } catch (_) {}
+            gl = null; canvas = null; program = null; vao = null; tex = null; resizeObs = null;
+        }, false);
 
         const vs = compile(gl.VERTEX_SHADER, VERT);
         const fs = compile(gl.FRAGMENT_SHADER, FRAG);

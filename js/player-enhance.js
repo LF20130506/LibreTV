@@ -38,14 +38,14 @@
         try { title = (document.getElementById('videoTitle') || {}).textContent || ''; } catch (e) {}
         return ANIME_RE.test(t + ' ' + title);
     }
-    // 「自动」路由：动画→Anime4K；低清实拍(≤576p)→降噪；高清实拍/未知→轻量 CSS 锐化
-    // （高清用 CSS 'light' 而非重型 WebGL 'clear'，避免逐帧 WebGL 拖卡播放器/设置；
-    //   想要更强清晰度手动选「实拍超清」）
+    // 「自动」路由：动画→Anime4K；低清实拍(≤576p)→降噪；高清实拍/未知→标准 CSS 锐化
+    // （高清用 CSS 'standard' 而非重型 WebGL 'clear'，避免逐帧 WebGL 拖卡播放器/设置；
+    //   想要更强清晰度手动选「实拍超清」或「强」）
     function resolveAuto(art) {
         const sh = (art && art.video && art.video.videoHeight) || 0;
         if (classifyContent()) return 'a4k';
         if (sh && sh <= 576) return 'sr';
-        return 'light';
+        return 'standard';
     }
     function updateEnhanceTooltip(art, text) {
         try { art.setting.update({ name: 'enhance', tooltip: text }); } catch (e) {}
@@ -93,12 +93,45 @@
         [120, 400, 900].forEach((t) => setTimeout(() => updateQualityBadge(art), t));
     }
 
+    // ===== 画质 = 输出分辨率目标（单码率源也始终可改）=====
+    // 与「画质增强」算法解耦：'auto'/'source' 沿用增强设置；选更高分辨率则用
+    // 锐利上采样（动画→Anime4K，实拍→实拍超清 CAS），绝不走会发柔的「降噪」档。
+    const LS_QTARGET = 'playerQualityTarget';
+    const QTARGETS = [
+        { html: '自动',   value: 'auto' },
+        { html: '源画质', value: 'source' },
+        { html: '1440P',  value: '1440' },
+        { html: '4K',     value: '2160' },
+    ];
+    function getSavedTarget() {
+        try {
+            const v = localStorage.getItem(LS_QTARGET);
+            return QTARGETS.some((o) => o.value === v) ? v : 'auto';
+        } catch (e) { return 'auto'; }
+    }
+    function saveTarget(v) { try { localStorage.setItem(LS_QTARGET, v); } catch (e) {} }
+    function targetLabel(v) { return (QTARGETS.find((o) => o.value === v) || QTARGETS[0]).html; }
+
+    // 单一入口：综合当前「画质目标」+「画质增强」并应用到视频
+    function applyCurrent(art) {
+        if (!art || !art.video) return;
+        const target = getSavedTarget();
+        if (global.Anime4K && global.Anime4K.setTarget) {
+            global.Anime4K.setTarget(target === 'source' ? 0 : target); // 'auto' | 0 | 高度
+        }
+        if (target === 'auto' || target === 'source') {
+            applyEnhance(art, getSavedEnhance());                       // 沿用增强设置（含自动路由）
+        } else {
+            applyEnhance(art, classifyContent() ? 'a4k' : 'clear');     // 上采样到目标，锐利不发柔
+        }
+    }
+
     // 初始化「画质增强」设置项（只需调用一次）
     function initEnhance(art) {
         if (!art || enhanceInited) return;
         const saved = getSavedEnhance();
         if (global.Anime4K) global.Anime4K.setStrength(getStrength()); // 应用已保存的强度
-        applyEnhance(art, saved);
+        applyCurrent(art);
         initQualityBadge(art); // 自动检测并显示分辨率画质角标
         initStrengthControl(art); // 增强强度滑块
         if (global.LTDownloader) global.LTDownloader.setup(art); // 下载（本集/整季）
@@ -114,8 +147,11 @@
                     default: p.value === saved,
                 })),
                 onSelect: function (item) {
-                    applyEnhance(art, item.value);
                     saveEnhance(item.value);
+                    // 选增强算法时，分辨率目标回到「自动」，避免「画质」与「画质增强」互相覆盖
+                    saveTarget('auto');
+                    try { art.setting.update({ name: 'quality', tooltip: targetLabel('auto') }); } catch (e) {}
+                    applyCurrent(art);
                     return item.html;
                 },
             });
@@ -124,11 +160,10 @@
             console.warn('[PlayerEnhance] 增强设置项注册失败:', e && e.message);
         }
 
-        // 切集/换源后视频元素的 filter 可能被重置，重新应用
-        art.on('video:loadedmetadata', () => applyEnhance(art, getSavedEnhance()));
+        // 切集/换源后视频元素的 filter 可能被重置，重新应用（综合画质目标 + 增强设置）
+        art.on('video:loadedmetadata', () => applyCurrent(art));
         // 「自动」档实时重路由：真实分辨率确定/变化(resize)时，用当前分辨率重判增强档
-        // （resize 仅在分辨率真正变化时触发；applyEnhance 对 WebGL 幂等；手动档只是原样重应用）
-        if (art.video) art.video.addEventListener('resize', () => applyEnhance(art, getSavedEnhance()));
+        if (art.video) art.video.addEventListener('resize', () => applyCurrent(art));
         // 播放器销毁时关闭 Anime4K 渲染循环
         try { art.on('destroy', () => global.Anime4K && global.Anime4K.disable()); } catch (e) {}
     }
@@ -267,15 +302,15 @@
     function updateQuality(art, hls) {
         if (!art || !art.setting) return;
 
-        // 单码率（多数采集站）：移除可能存在的旧「画质」项，避免残留混乱菜单
+        // 单码率（多数采集站）：没有真实码率档，但「画质」仍始终可改——
+        // 改成「输出分辨率」选择，通过 WebGL 上采样把画面放大到目标分辨率。
         if (!hls || !Array.isArray(hls.levels) || hls.levels.length <= 1) {
-            if (qualityAdded) {
-                try { art.setting.remove && art.setting.remove('quality'); } catch (e) {}
-                qualityAdded = false;
-            }
+            addResolutionQuality(art);
             return;
         }
 
+        // 有真实多码率档：用真实档位，分辨率目标回到自动（交给 ABR/手选档）
+        saveTarget('auto');
         const levels = hls.levels
             .map((lv, i) => ({ h: lv.height || 0, i }))
             .sort((a, b) => b.h - a.h);
@@ -311,6 +346,36 @@
             console.warn('[PlayerEnhance] 画质设置项注册失败:', e && e.message);
         }
     }
+    // 单码率源的「画质」= 输出分辨率选择（自动/源画质/1440P/4K）
+    function addResolutionQuality(art) {
+        if (!art || !art.setting) return;
+        const saved = getSavedTarget();
+        const setting = {
+            name: 'quality',
+            html: '画质',
+            tooltip: targetLabel(saved),
+            selector: QTARGETS.map((o) => ({ html: o.html, value: o.value, default: o.value === saved })),
+            onSelect: function (item) {
+                saveTarget(item.value);
+                applyCurrent(art);
+                [120, 400, 900].forEach((t) => setTimeout(() => updateQualityBadge(art), t));
+                return item.html;
+            },
+        };
+        try {
+            if (qualityAdded) {
+                if (typeof art.setting.update === 'function') art.setting.update(setting);
+                else { try { art.setting.remove && art.setting.remove('quality'); } catch (e) {} art.setting.add(setting); }
+            } else {
+                art.setting.add(setting);
+                qualityAdded = true;
+            }
+        } catch (e) {
+            console.warn('[PlayerEnhance] 画质(分辨率)设置项注册失败:', e && e.message);
+        }
+        applyCurrent(art); // 应用已保存目标（换集后保持）
+    }
+
     let qualityAdded = false;
     let levelSwitchBound = false;
 

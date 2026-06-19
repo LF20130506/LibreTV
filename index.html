@@ -21,18 +21,43 @@
 </head>
 <body class="page-bg text-white">
     <!-- 背景装饰：椰子树🌴（固定在右下角，低透明度，置于内容之后）-->
-    <svg class="bg-palm" viewBox="0 0 220 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M120 256 C112 200 104 150 116 104 C120 132 126 196 132 256 Z" fill="#9c6b3f"/>
-        <g fill="#2f9e5c">
-            <path d="M118 100 C78 78 44 80 18 102 C52 90 86 92 120 108 Z"/>
-            <path d="M120 100 C160 76 196 78 210 100 C178 88 150 92 122 108 Z"/>
-            <path d="M118 98 C88 58 56 44 28 44 C66 52 96 72 120 106 Z"/>
-            <path d="M120 98 C150 56 182 42 208 44 C172 52 144 72 122 106 Z"/>
-            <path d="M119 96 C110 54 114 28 130 10 C120 40 122 70 122 104 Z"/>
+    <svg class="bg-palm" viewBox="0 0 240 270" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+            <linearGradient id="palmTrunk" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#5a3a1e"/>
+                <stop offset="0.5" stop-color="#a07444"/>
+                <stop offset="1" stop-color="#5a3a1e"/>
+            </linearGradient>
+            <linearGradient id="palmFrond" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3fb46c"/>
+                <stop offset="1" stop-color="#1f7d49"/>
+            </linearGradient>
+        </defs>
+        <!-- 树干：自然弯曲 + 节理 -->
+        <path d="M112 266 C108 206 102 152 113 104 L125 104 C130 154 126 210 132 266 Z" fill="url(#palmTrunk)"/>
+        <g stroke="#5a3a1e" stroke-width="1.4" stroke-opacity="0.5" fill="none">
+            <path d="M113 132 q7 4 13 0"/>
+            <path d="M111 168 q8 4 15 0"/>
+            <path d="M109 206 q9 4 17 0"/>
         </g>
-        <circle cx="110" cy="106" r="7" fill="#6b4423"/>
-        <circle cx="128" cy="108" r="7" fill="#6b4423"/>
-        <circle cx="119" cy="114" r="6.5" fill="#5a3a1e"/>
+        <!-- 后层叶（深，做层次）-->
+        <g fill="#1f7d49">
+            <path d="M118 100 C70 90 32 104 10 132 C40 100 82 94 120 104 Z"/>
+            <path d="M120 100 C168 84 206 90 228 116 C196 96 156 94 122 104 Z"/>
+            <path d="M119 99 C104 52 104 24 114 4 C120 32 124 66 122 102 Z"/>
+        </g>
+        <!-- 前层叶（亮，渐变）-->
+        <g fill="url(#palmFrond)">
+            <path d="M118 100 C66 80 28 78 6 96 C42 80 84 90 120 104 Z"/>
+            <path d="M118 99 C84 54 54 40 30 34 C64 50 96 72 121 103 Z"/>
+            <path d="M120 98 C140 50 152 28 170 16 C148 44 128 70 123 102 Z"/>
+            <path d="M120 99 C160 58 196 54 218 60 C184 62 152 80 122 103 Z"/>
+            <path d="M120 101 C170 100 208 116 226 146 C198 112 158 102 122 104 Z"/>
+        </g>
+        <!-- 椰果 -->
+        <circle cx="110" cy="108" r="7" fill="#7a4a22"/>
+        <circle cx="127" cy="110" r="7" fill="#8a5526"/>
+        <circle cx="118" cy="117" r="6.5" fill="#6b4423"/>
     </svg>
     <!-- 将历史记录按钮移到左上角，并缩小尺寸 -->
     <div class="fixed top-4 left-4 z-50 flex gap-2">

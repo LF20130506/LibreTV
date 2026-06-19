@@ -277,7 +277,9 @@ body.player-active #settingsPanel {
     border-radius: 16px !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5),
                 inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
-    overflow: hidden;
+    /* 横向裁切到圆角，纵向可滚动——否则菜单项多时(画质/增强/画面比例…)会被裁掉够不到 */
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 /* 菜单项圆角高亮 + 顺滑过渡 */
 .art-video-player .art-setting-item,

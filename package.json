@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "nodemon server.mjs",
     "start": "node server.mjs",
-    "test": "node --test \"test/**/*.test.mjs\""
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "build:css": "tailwindcss -i ./css/tailwind.input.css -o ./css/tailwind.css --minify"
   },
   "dependencies": {
     "axios": "^1.9.0",
@@ -19,6 +20,7 @@
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "tailwindcss": "^3.4.19"
   }
 }

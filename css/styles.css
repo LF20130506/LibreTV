@@ -343,6 +343,18 @@ body {
     box-shadow: 0 2px 4px rgba(0, 204, 255, 0.3);
 }
 
+#maxPerfToggle:checked + .toggle-bg {
+    background-color: var(--primary-color);
+}
+#maxPerfToggle:checked ~ .toggle-dot {
+    transform: translateX(1.5rem);
+    box-shadow: 0 2px 4px rgba(0, 204, 255, 0.3);
+}
+#maxPerfToggle:focus + .toggle-bg,
+#maxPerfToggle:hover + .toggle-bg {
+    box-shadow: 0 0 0 2px rgba(0, 204, 255, 0.3);
+}
+
 /* 添加API复选框样式 */
 .form-checkbox {
     appearance: none;

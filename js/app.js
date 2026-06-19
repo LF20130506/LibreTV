@@ -54,6 +54,15 @@ document.addEventListener('DOMContentLoaded', function () {
         adFilterToggle.checked = localStorage.getItem(PLAYER_CONFIG.adFilteringStorage) !== 'false'; // 默认为true
     }
 
+    // 高性能画质增强开关初始状态（未设置过时：iOS 的 A 系列默认开启，其余默认关闭）
+    const maxPerfToggle = document.getElementById('maxPerfToggle');
+    if (maxPerfToggle) {
+        const pref = localStorage.getItem('maxPerfEnhance');
+        const strongByDefault = /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        maxPerfToggle.checked = pref === null ? strongByDefault : pref === 'true';
+    }
+
     // 设置事件监听器
     setupEventListeners();
 
@@ -566,6 +575,14 @@ function setupEventListeners() {
     if (adFilterToggle) {
         adFilterToggle.addEventListener('change', function (e) {
             localStorage.setItem(PLAYER_CONFIG.adFilteringStorage, e.target.checked);
+        });
+    }
+
+    // 高性能画质增强开关事件绑定（播放页 anime4k.js 会读取 maxPerfEnhance 决定是否跳过封顶）
+    const maxPerfToggle = document.getElementById('maxPerfToggle');
+    if (maxPerfToggle) {
+        maxPerfToggle.addEventListener('change', function (e) {
+            localStorage.setItem('maxPerfEnhance', e.target.checked);
         });
     }
 }

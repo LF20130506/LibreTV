@@ -214,10 +214,15 @@
         return Math.round(cssH * dpr);
     }
 
-    // 高性能设备(iPhone/iPad 的 A 系列芯片等)：GPU 很强，不必为省电而限制分辨率，
-    // 直接榨干性能做超采样(渲染到更高分辨率再缩放)，画面更锐。
+    // 是否"榨干性能"渲染(跳过屏幕像素封顶、做超采样)：
+    //   · 首页「高性能画质增强」开关(localStorage.maxPerfEnhance) 显式设置时以它为准——
+    //     这样独显/计算卡(如 B300)等非 iOS 强机也能手动开启。
+    //   · 未设置过：iPhone/iPad 的 A 系列芯片 GPU 很强，默认开启。
     function isHighEndDevice() {
         try {
+            const pref = localStorage.getItem('maxPerfEnhance');
+            if (pref === 'true') return true;
+            if (pref === 'false') return false;
             const ua = navigator.userAgent || '';
             return /iPad|iPhone|iPod/.test(ua) ||
                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS 桌面 UA

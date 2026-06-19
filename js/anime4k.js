@@ -214,9 +214,19 @@
         return Math.round(cssH * dpr);
     }
 
+    // 高性能设备(iPhone/iPad 的 A 系列芯片等)：GPU 很强，不必为省电而限制分辨率，
+    // 直接榨干性能做超采样(渲染到更高分辨率再缩放)，画面更锐。
+    function isHighEndDevice() {
+        try {
+            const ua = navigator.userAgent || '';
+            return /iPad|iPhone|iPod/.test(ua) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS 桌面 UA
+        } catch (e) { return false; }
+    }
+
     // 计算增强输出尺寸。
-    //  · target='auto'：低于 1440p 的源上采样到 1440p，并按设备可显示像素封顶——
-    //    自动档要省 GPU、防止设置菜单卡顿，所以不在小屏上盲目渲染超大缓冲。
+    //  · target='auto'：低于 1440p 的源上采样到 1440p。一般设备按可显示像素封顶省 GPU；
+    //    高性能设备(iOS A 系列)跳过封顶、榨干性能做超采样，仅留 2160 安全上限。
     //  · target=0（源画质）：用源高度。
     //  · target=数字（用户显式选 1440P/4K）：尊重用户选择，渲染到该分辨率（超采样更锐，
     //    再由浏览器缩放到屏幕），不按屏幕封顶——否则手机上选 4K 会被悄悄降回 ~1080p，
@@ -226,8 +236,11 @@
         let th;
         if (targetSetting === 'auto') {
             th = sh < 1440 ? 1440 : sh;
-            const cap = deviceCapHeight();
-            if (cap > 0) th = Math.min(th, Math.max(sh, cap)); // 自动档按设备像素封顶
+            if (!isHighEndDevice()) {                          // 高性能设备(iOS)不省 GPU、跳过封顶
+                const cap = deviceCapHeight();
+                if (cap > 0) th = Math.min(th, Math.max(sh, cap));
+            }
+            th = Math.min(th, 2160);                           // 安全上限 4K
         } else if (targetSetting === 0) {
             th = sh;
         } else {

@@ -124,31 +124,8 @@
             console.warn('[PlayerEnhance] 增强设置项注册失败:', e && e.message);
         }
 
-        // 画面比例：解决苹果等超宽屏幕(19.5:9)播 16:9 时两侧黑边的问题
-        const savedFit = getSavedFit();
-        applyFit(art, savedFit);
-        try {
-            art.setting.add({
-                name: 'aspect',
-                html: '画面比例',
-                tooltip: fitByValue(savedFit).html,
-                selector: FIT_OPTIONS.map((o) => ({
-                    html: o.html,
-                    value: o.value,
-                    default: o.value === savedFit,
-                })),
-                onSelect: function (item) {
-                    applyFit(art, item.value);
-                    saveFit(item.value);
-                    return item.html;
-                },
-            });
-        } catch (e) {
-            console.warn('[PlayerEnhance] 画面比例设置项注册失败:', e && e.message);
-        }
-
         // 切集/换源后视频元素的 filter 可能被重置，重新应用
-        art.on('video:loadedmetadata', () => { applyEnhance(art, getSavedEnhance()); applyFit(art, getSavedFit()); });
+        art.on('video:loadedmetadata', () => applyEnhance(art, getSavedEnhance()));
         // 「自动」档实时重路由：真实分辨率确定/变化(resize)时，用当前分辨率重判增强档
         // （resize 仅在分辨率真正变化时触发；applyEnhance 对 WebGL 幂等；手动档只是原样重应用）
         if (art.video) art.video.addEventListener('resize', () => applyEnhance(art, getSavedEnhance()));
@@ -156,31 +133,6 @@
         try { art.on('destroy', () => global.Anime4K && global.Anime4K.disable()); } catch (e) {}
     }
     let enhanceInited = false;
-
-    // ===== 画面比例（适应 / 铺满裁切 / 拉伸）=====
-    const LS_FIT = 'playerFit';
-    const FIT_OPTIONS = [
-        { value: 'contain', html: '适应（保留比例）' },
-        { value: 'cover',   html: '铺满裁切（去黑边）' },
-        { value: 'fill',    html: '拉伸铺满' },
-    ];
-    function fitByValue(v) {
-        return FIT_OPTIONS.find((o) => o.value === v) || FIT_OPTIONS[0];
-    }
-    function getSavedFit() {
-        try {
-            const v = localStorage.getItem(LS_FIT);
-            return fitByValue(v).value;
-        } catch (e) { return 'contain'; }
-    }
-    function saveFit(v) {
-        try { localStorage.setItem(LS_FIT, v); } catch (e) {}
-    }
-    function applyFit(art, fit) {
-        const v = fitByValue(fit).value;
-        if (art && art.video) art.video.style.objectFit = v;
-        if (global.Anime4K && global.Anime4K.setObjectFit) global.Anime4K.setObjectFit(v);
-    }
 
     // ===== 增强强度滑块（对 Anime4K / 超分 生效）=====
     const LS_STRENGTH = 'enhanceStrength';

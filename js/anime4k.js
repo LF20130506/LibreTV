@@ -154,6 +154,7 @@
         canvas.style.cssText =
             'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;' +
             'pointer-events:none;z-index:11;';
+        canvas.style.objectFit = objectFit; // 跟随用户选择的画面比例
         gl = canvas.getContext('webgl2', { alpha: false, premultipliedAlpha: false, antialias: false });
         if (!gl) throw new Error('WebGL2 不可用');
 
@@ -325,5 +326,12 @@
 
     function isRunning() { return running; }
 
-    global.Anime4K = { enable, disable, isRunning, setStrength, setTarget, getOutputHeight, getOutputWidth };
+    // 让增强 canvas 的填充方式与 <video> 保持一致（适应/铺满裁切/拉伸）
+    let objectFit = 'contain';
+    function setObjectFit(fit) {
+        objectFit = fit || 'contain';
+        if (canvas) canvas.style.objectFit = objectFit;
+    }
+
+    global.Anime4K = { enable, disable, isRunning, setStrength, setTarget, setObjectFit, getOutputHeight, getOutputWidth };
 })(window);

@@ -526,6 +526,21 @@ function setupEventListeners() {
         }
     });
 
+    // Esc 关闭：优先关详情弹窗，其次关设置/历史抽屉
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        const modal = document.getElementById('modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            if (typeof closeModal === 'function') closeModal();
+            else modal.classList.add('hidden');
+            return;
+        }
+        const settingsPanel = document.querySelector('#settingsPanel.show');
+        if (settingsPanel) { settingsPanel.classList.remove('show'); return; }
+        const historyPanel = document.querySelector('#historyPanel.show');
+        if (historyPanel) { historyPanel.classList.remove('show'); return; }
+    });
+
     // 点击外部关闭设置面板和历史记录面板
     document.addEventListener('click', function (e) {
         // 关闭设置面板

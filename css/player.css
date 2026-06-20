@@ -202,13 +202,28 @@ div.player-loading-text {
 }
 
 .episode-active {
-    background-color: #3b82f6 !important;
-    border-color: #60a5fa !important;
+    background-color: #1fb3c4 !important;   /* 主题青：与品牌一致(原蓝 #3b82f6) */
+    border-color: #5fcdd9 !important;
+    border-left: 3px solid #8fe3ee !important; /* 当前集左侧亮青标识，长列表一眼可见 */
+    color: #fff !important;
 }
 
 .episode-grid {
     max-height: 30vh;
     overflow-y: auto;
+    scrollbar-width: thin;                     /* Firefox：细滚动条，提示可滚动 */
+    scrollbar-color: rgba(31,179,196,0.55) transparent;
+}
+.episode-grid::-webkit-scrollbar { width: 8px; }
+.episode-grid::-webkit-scrollbar-thumb {
+    background: rgba(31,179,196,0.45);
+    border-radius: 8px;
+}
+.episode-grid::-webkit-scrollbar-thumb:hover { background: rgba(31,179,196,0.7); }
+/* 键盘选集：焦点环可见 */
+.episode-grid button:focus-visible {
+    outline: 2px solid #1fb3c4;
+    outline-offset: 2px;
 }
 
 /* 恢复播放位置提示样式 */
@@ -274,7 +289,7 @@ div.player-loading-text {
 }
 
 input:checked + .slider {
-    background-color: #00ccff;
+    background-color: #1fb3c4;   /* 主题青(原 #00ccff) */
 }
 
 input:checked + .slider:before {
@@ -345,7 +360,7 @@ input:checked + .slider:before {
     align-items: center;
     background: none;
     border: none;
-    color: #a67c2d;
+    color: #5fcdd9;            /* 浅青：深底播放页上清晰(原沙色 #a67c2d 偏突兀) */
     font-weight: bold;
     font-size: 1rem;
     cursor: pointer;
@@ -355,19 +370,16 @@ input:checked + .slider:before {
     transition: background 0.2s;
 }
 
-.resource-switch-btn:hover {
-    background: #f5e9d7;
-}
-
+.resource-switch-btn:hover,
 .resource-switch-btn:active {
-    background: #f5e9d7;
+    background: rgba(31, 179, 196, 0.18);   /* 半透明青：深底上不会"消失"(原奶油 #f5e9d7) */
 }
 
 .resource-switch-icon {
     width: 20px;
     height: 20px;
     margin-right: 0;
-    color: #a67c2d;
+    color: #5fcdd9;
     vertical-align: middle;
     transition: transform 0.3s;
 }

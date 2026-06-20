@@ -1477,6 +1477,10 @@ function toggleControlsLock() {
     icon.innerHTML = controlsLocked
         ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d=\"M12 15v2m0-8V7a4 4 0 00-8 0v2m8 0H4v8h16v-8H6v-6z\"/>'
         : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d=\"M15 11V7a3 3 0 00-6 0v4m-3 4h12v6H6v-6z\"/>';
+    // 给用户明确反馈（锁定后界面变化细微，容易以为没生效）
+    if (typeof showToast === 'function') {
+        showToast(controlsLocked ? '已锁定播放控制' : '已解锁播放控制', 'info');
+    }
 }
 
 // 支持在iframe中关闭播放器

@@ -187,6 +187,15 @@ body.page-bg { color: var(--text-color); }
     border-right: 1px solid var(--glass-border) !important;
     border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
 }
+/* 小屏：抽屉不再挤满/溢出（设置面板原 w-80=320px 在 <360px 上过宽）*/
+@media (max-width: 640px) {
+    #settingsPanel,
+    #historyPanel,
+    .settings-panel,
+    .history-panel {
+        width: min(86vw, 20rem) !important;
+    }
+}
 
 /* 面板内嵌的分组块：更淡的玻璃，营造层次 */
 #settingsPanel > div > .shadow-inner,
@@ -303,7 +312,7 @@ body.player-active #settingsPanel {
 .art-video-player .art-setting-item:hover,
 .art-video-player .art-selector-item:hover,
 .art-video-player .art-contextmenu:hover {
-    background: rgba(255, 255, 255, 0.10) !important;
+    background: rgba(255, 255, 255, 0.16) !important; /* 实玻璃面板上点选反馈更明显 */
 }
 /* 选中态用海水青点缀 */
 .art-video-player .art-setting-item-right .art-current,
@@ -736,7 +745,10 @@ body.page-bg {
 }
 .page-bg button:focus-visible,
 .page-bg a:focus-visible,
-.page-bg input:focus-visible {
+.page-bg input:focus-visible,
+.page-bg .recent-search-tag:focus-visible,
+.page-bg .douban-tag:focus-visible,
+.page-bg [tabindex]:focus-visible {
     outline: 2px solid var(--glass-border-strong);
     outline-offset: 2px;
 }

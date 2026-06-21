@@ -481,6 +481,7 @@ function deleteHistoryItem(encodedUrl) {
 
         // 保存回localStorage
         localStorage.setItem('viewingHistory', JSON.stringify(newHistory));
+        if (window.HistorySync) window.HistorySync.push();
 
         // 重新加载历史记录显示
         loadViewingHistory();
@@ -750,6 +751,7 @@ function addToViewingHistory(videoInfo) {
 
         // 保存到本地存储
         localStorage.setItem('viewingHistory', JSON.stringify(history));
+        if (window.HistorySync) window.HistorySync.push();
     } catch (e) {
         // console.error('保存观看历史失败:', e);
     }
@@ -759,6 +761,7 @@ function addToViewingHistory(videoInfo) {
 function clearViewingHistory() {
     try {
         localStorage.removeItem('viewingHistory');
+        if (window.HistorySync) window.HistorySync.push(true);
         loadViewingHistory(); // 重新加载空的历史记录
         showToast('观看历史已清空', 'success');
     } catch (e) {

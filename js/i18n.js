@@ -59,6 +59,10 @@
             'settings.tmdbDesc': '在影片详情中显示其可观看的正版平台并跳转。需填入免费的 TMDB API Key（<a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">申请地址</a>）。留空则不启用。',
             'settings.tmdbRegionPlaceholder': '地区(如 US/HK/TW)',
             'settings.save': '保存',
+            'settings.historySync': '历史云同步',
+            'settings.historySyncDesc': '填写用户名后，观看历史将绑定该名字保存到云端（KV），多设备共享；留空则仅保存在本地。',
+            'settings.usernamePlaceholder': '用户名（留空则仅本地）',
+            'settings.usernameSave': '保存并同步',
             'settings.generalFunc': '一般功能',
             'settings.importConfig': '导入配置',
             'settings.exportConfig': '导出配置',
@@ -153,6 +157,9 @@
 
             // 切换提示
             'toast.switched': '已切换到中文',
+            'toast.userSaved': '已保存用户名，历史已与云端同步',
+            'toast.userCleared': '已清除用户名，停止云同步（历史仅保存在本地）',
+            'toast.syncFail': '云同步不可用（KV 未配置或网络问题），已仅保存在本地',
         },
         en: {
             'title.index': 'LibreTV - Free Online Video Search & Streaming',
@@ -197,6 +204,10 @@
             'settings.tmdbDesc': 'Show legal streaming platforms for a title in its details and link out. Requires a free TMDB API Key (<a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">get one here</a>). Leave empty to disable.',
             'settings.tmdbRegionPlaceholder': 'Region (e.g. US/HK/TW)',
             'settings.save': 'Save',
+            'settings.historySync': 'Cloud History Sync',
+            'settings.historySyncDesc': 'Set a username to bind your watch history and save it in the cloud (KV), shared across devices. Leave empty to keep it local only.',
+            'settings.usernamePlaceholder': 'Username (empty = local only)',
+            'settings.usernameSave': 'Save & Sync',
             'settings.generalFunc': 'General',
             'settings.importConfig': 'Import Config',
             'settings.exportConfig': 'Export Config',
@@ -282,6 +293,9 @@
             'about.complaintFooter': 'In your complaint email, please provide: proof of your identity, proof of rights, the specific links to the infringing content, and a relevant description. We will handle the complaint as soon as possible. For content confirmed to be infringing, we will immediately remove the relevant links, stop displaying the infringing content, and report the outcome back to you.',
 
             'toast.switched': 'Switched to English',
+            'toast.userSaved': 'Username saved; history synced with the cloud',
+            'toast.userCleared': 'Username cleared; cloud sync off (history kept locally)',
+            'toast.syncFail': 'Cloud sync unavailable (KV not configured or network issue); saved locally only',
         },
     };
 

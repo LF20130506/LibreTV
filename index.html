@@ -247,6 +247,16 @@
                 </div>
             </div>
 
+            <!-- 历史云同步（用户名绑定）区域 -->
+            <div class="p-3 bg-[#151515] rounded-lg shadow-inner">
+                <label class="block text-sm font-medium text-gray-400 mb-1 border-b border-[#333] pb-1" data-i18n="settings.historySync">历史云同步</label>
+                <p class="text-xs text-gray-500 mb-3" data-i18n="settings.historySyncDesc">填写用户名后，观看历史将绑定该名字保存到云端（KV），多设备共享；留空则仅保存在本地。</p>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="usernameInput" placeholder="用户名（留空则仅本地）" data-i18n-placeholder="settings.usernamePlaceholder" class="flex-1 bg-[#222] border border-[#333] text-white px-2 py-1 rounded" autocomplete="off">
+                    <button onclick="saveUsernameSetting()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs whitespace-nowrap" data-i18n="settings.usernameSave">保存并同步</button>
+                </div>
+            </div>
+
             <!-- 一般功能区域 -->
             <div class="p-3 bg-[#151515] rounded-lg shadow-inner">
                 <label class="block text-sm font-medium text-gray-400 mb-3 border-b border-[#333] pb-1" data-i18n="settings.generalFunc">一般功能</label>
@@ -500,6 +510,7 @@
     <script src="js/utils/security.js"></script>
     <script src="js/watch-providers.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/history-sync.js"></script>
     <script src="js/api.js"></script>
     <script src="js/douban.js"></script>
     <script src="js/password.js"></script>

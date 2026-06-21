@@ -1,0 +1,13 @@
+{
+  "appId": "org.libretv.app",
+  "appName": "LibreTV",
+  "webDir": "www",
+  "server": {
+    "url": "https://REPLACE-WITH-YOUR-LIBRETV-DOMAIN",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "always",
+    "limitsNavigationsToAppBoundDomains": false
+  }
+}

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>LibreTV</title>
+    <style>
+        html, body { margin: 0; height: 100%; background: #0a0a0a; color: #ddd;
+            font-family: -apple-system, "PingFang SC", system-ui, sans-serif; }
+        .wrap { height: 100%; display: flex; align-items: center; justify-content: center;
+            text-align: center; padding: 24px; box-sizing: border-box; }
+        a { color: #1fb3c4; }
+        code { background: #1b1b1b; padding: 2px 6px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <!--
+      这是 Capacitor 的 webDir 兜底页面。正常情况下 capacitor.config.json 里的
+      server.url 会让 App 直接加载你部署的 LibreTV 站点，不会显示本页。
+      看到本页 = 你还没把 server.url 改成自己的域名。
+    -->
+    <div class="wrap">
+        <div>
+            <h2>LibreTV</h2>
+            <p>请在 <code>mobile/capacitor.config.json</code> 里把<br>
+            <code>server.url</code> 改成你部署的 LibreTV 网址，<br>然后 <code>npm run sync</code> 重新同步。</p>
+            <p>详见 <code>mobile/README.md</code>。</p>
+        </div>
+    </div>
+</body>
+</html>

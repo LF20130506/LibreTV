@@ -19,7 +19,11 @@ body, html {
     position: fixed !important;
     top: 0;
     left: 0;
-    width: 100vw;
+    right: 0;            /* 用 left:0+right:0 贴合视口，避免 100vw 把滚动条宽度算进去导致右侧溢出 */
+    width: auto;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;    /* 兜底：标题过长时裁切，绝不把右侧控件挤出屏幕 */
     z-index: 9000 !important;
     pointer-events: auto !important;
     background: #111;

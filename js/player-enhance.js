@@ -38,13 +38,17 @@
         try { title = (document.getElementById('videoTitle') || {}).textContent || ''; } catch (e) {}
         return ANIME_RE.test(t + ' ' + title);
     }
-    // 「自动」路由：动画→Anime4K；低清实拍(≤576p)→降噪；高清实拍/未知→CSS 锐化。
-    // 高清用 CSS 锐化（而非重型 WebGL）避免逐帧 WebGL 拖卡播放器/设置；其锐化档位
-    // 跟随「增强强度」滑块：弱→轻度、默认→标准、强→强，让自动锐化强度也可调。
+    // 「自动」路由：动画→Anime4K；低清实拍(≤576p，如老剧/标清)→CAS 超清(放大+锐化)；
+    // 高清实拍/未知→CSS 锐化。高清用 CSS 锐化（而非重型 WebGL）避免逐帧 WebGL 拖卡；
+    // 其锐化档位跟随「增强强度」滑块：弱→轻度、默认→标准、强→强。
     function resolveAuto(art) {
         const sh = (art && art.video && art.video.videoHeight) || 0;
         if (classifyContent()) return 'a4k';
-        if (sh && sh <= 576) return 'sr';
+        // 老剧/标清实拍（如《康熙微服私访记》~480p）：以前只做双边降噪、不锐化也不放大，
+        // 画面依旧发糊。改走 CAS 超清——双线性放大到目标分辨率 + 对比度自适应锐化
+        // （钳制邻域 min/max，无白边/光晕），让老片真正变清晰。
+        // 若某源噪点过重，可手动切「老片降噪」或调低「增强强度」。
+        if (sh && sh <= 576) return 'clear_strong';
         const s = getStrength();
         return s >= 1.25 ? 'strong' : (s >= 0.85 ? 'standard' : 'light');
     }

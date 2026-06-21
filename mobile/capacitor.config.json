@@ -3,7 +3,7 @@
   "appName": "LibreTV",
   "webDir": "www",
   "server": {
-    "url": "https://REPLACE-WITH-YOUR-LIBRETV-DOMAIN",
+    "url": "https://lyj111.dpdns.org",
     "cleartext": false
   },
   "ios": {

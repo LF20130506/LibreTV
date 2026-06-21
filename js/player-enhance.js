@@ -60,6 +60,10 @@
     function getSavedEnhance() {
         try { return localStorage.getItem(LS_ENHANCE) || 'auto'; } catch (e) { return 'auto'; }
     }
+    // 「高性能增强」开关状态（与首页设置、anime4k.isHighEndDevice 共用同一 localStorage 键）
+    function getMaxPerf() {
+        try { return localStorage.getItem('maxPerfEnhance') === 'true'; } catch (e) { return false; }
+    }
     function saveEnhance(value) {
         try { localStorage.setItem(LS_ENHANCE, value); } catch (e) {}
     }
@@ -164,6 +168,26 @@
                     return item.html;
                 },
             });
+
+            // 「高性能增强」开关：榨干 GPU 做超采样（跳过屏幕像素封顶，渲染到更高分辨率）。
+            // 与首页同名设置共用 localStorage('maxPerfEnhance')；在播放器里就近可调更顺手。
+            // 改动后由逐帧 syncSize 自动按新设置重算输出分辨率，无需重建。
+            try {
+                art.setting.add({
+                    name: 'maxperf',
+                    html: '高性能增强',
+                    tooltip: getMaxPerf() ? '开' : '关',
+                    switch: getMaxPerf(),
+                    onSwitch: function (item) {
+                        const next = !item.switch;
+                        try { localStorage.setItem('maxPerfEnhance', next ? 'true' : 'false'); } catch (e) {}
+                        try { art.setting.update({ name: 'maxperf', tooltip: next ? '开' : '关' }); } catch (e) {}
+                        [120, 500, 1000].forEach((t) => setTimeout(() => updateQualityBadge(art), t));
+                        return next;
+                    },
+                });
+            } catch (e) { /* 开关不可用则忽略，不影响主功能 */ }
+
             enhanceInited = true;
         } catch (e) {
             console.warn('[PlayerEnhance] 增强设置项注册失败:', e && e.message);

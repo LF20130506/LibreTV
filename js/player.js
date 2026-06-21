@@ -87,6 +87,9 @@ let episodesReversed = false;
 let autoplayEnabled = true; // 默认开启自动连播
 let videoHasEnded = false; // 跟踪视频是否已经自然结束
 let userClickedPosition = null; // 记录用户点击的位置
+let subtitleTracks = [];        // 当前 m3u8 流中检测到的内嵌字幕轨
+let currentSubtitleIndex = -1;  // 当前启用的字幕轨索引，-1 表示关闭
+let subtitleDetectToasted = false; // 本集是否已弹过"检测到字幕"提示
 let shortcutHintTimeout = null; // 用于控制快捷键提示显示时间
 let adFilteringEnabled = true; // 默认开启广告过滤
 let progressSaveInterval = null; // 定期保存进度的计时器
@@ -490,8 +493,9 @@ function initPlayer(videoUrl) {
                 const hls = new Hls(hlsConfig);
                 currentHls = hls;
 
-                // 新的 HLS 实例：重置画质档位绑定状态
+                // 新的 HLS 实例：重置画质档位绑定状态与字幕检测状态
                 if (window.PlayerEnhance) window.PlayerEnhance.resetQuality();
+                resetSubtitleUI();
 
                 // 跟踪是否已经显示错误
                 let errorDisplayed = false;
@@ -537,8 +541,15 @@ function initPlayer(videoUrl) {
                 hls.on(Hls.Events.MANIFEST_PARSED, function () {
                     // 构建/更新「画质」档位选择
                     if (window.PlayerEnhance) window.PlayerEnhance.updateQuality(art, hls);
+                    // 兜底：部分流在 MANIFEST_PARSED 时已带 subtitleTracks
+                    onSubtitleTracksDetected(hls, hls.subtitleTracks || []);
                     video.play().catch(e => {
                     });
+                });
+
+                // 检测流内嵌字幕轨道（hls.js 解析 #EXT-X-MEDIA:TYPE=SUBTITLES 后触发）
+                hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, function (event, data) {
+                    onSubtitleTracksDetected(hls, (data && data.subtitleTracks) || hls.subtitleTracks || []);
                 });
 
                 hls.on(Hls.Events.ERROR, function (event, data) {
@@ -1480,6 +1491,81 @@ function toggleControlsLock() {
     // 给用户明确反馈（锁定后界面变化细微，容易以为没生效）
     if (typeof showToast === 'function') {
         showToast(controlsLocked ? '已锁定播放控制' : '已解锁播放控制', 'info');
+    }
+}
+
+// ===== 内嵌字幕检测与切换 =====
+// 小工具：取 i18n 文案，i18n.js 未就绪时回退到 key
+function _subT(key) {
+    return (typeof t === 'function') ? t(key) : key;
+}
+
+// 切换新流时复位字幕按钮与状态
+function resetSubtitleUI() {
+    subtitleTracks = [];
+    currentSubtitleIndex = -1;
+    subtitleDetectToasted = false;
+    const btn = document.getElementById('subtitleToggle');
+    if (btn) {
+        btn.classList.add('hidden');
+        btn.classList.remove('flex');
+        btn.style.color = '';
+        btn.style.borderColor = '';
+    }
+    const label = document.getElementById('subtitleLabel');
+    if (label) label.textContent = 'CC';
+}
+
+// 检测到内嵌字幕轨：显示字幕按钮并提示（默认不自动开启，交由用户点选）
+function onSubtitleTracksDetected(hls, tracks) {
+    if (!tracks || tracks.length === 0) return;
+    // 已记录同样数量则不重复处理（MANIFEST_PARSED 与 SUBTITLE_TRACKS_UPDATED 可能都触发）
+    if (subtitleTracks.length === tracks.length && subtitleDetectToasted) return;
+    subtitleTracks = tracks;
+
+    const btn = document.getElementById('subtitleToggle');
+    if (btn) {
+        btn.classList.remove('hidden');
+        btn.classList.add('flex');
+    }
+    // 默认保持关闭，仅提示检测到，避免强制弹字幕
+    try { hls.subtitleDisplay = false; hls.subtitleTrack = -1; } catch (e) {}
+    currentSubtitleIndex = -1;
+
+    if (!subtitleDetectToasted && typeof showToast === 'function') {
+        subtitleDetectToasted = true;
+        showToast(_subT('player.subDetected1') + tracks.length + _subT('player.subDetected2'), 'success');
+    }
+}
+
+// 点击字幕按钮：关闭 → 轨0 → 轨1 → … → 关闭，循环切换
+function cycleSubtitle() {
+    if (!currentHls || !subtitleTracks || subtitleTracks.length === 0) return;
+    const n = subtitleTracks.length;
+    currentSubtitleIndex = currentSubtitleIndex + 1;
+    if (currentSubtitleIndex >= n) currentSubtitleIndex = -1;
+
+    const btn = document.getElementById('subtitleToggle');
+    const label = document.getElementById('subtitleLabel');
+    try {
+        if (currentSubtitleIndex === -1) {
+            currentHls.subtitleDisplay = false;
+            currentHls.subtitleTrack = -1;
+            if (btn) { btn.style.color = ''; btn.style.borderColor = ''; }
+            if (label) label.textContent = 'CC';
+            if (typeof showToast === 'function') showToast(_subT('player.subOff'), 'info');
+        } else {
+            currentHls.subtitleTrack = currentSubtitleIndex;
+            currentHls.subtitleDisplay = true;
+            const trk = subtitleTracks[currentSubtitleIndex];
+            const name = (trk && (trk.name || trk.lang)) || (_subT('player.subTrack') + ' ' + (currentSubtitleIndex + 1));
+            // 高亮按钮（青色），多轨时角标显示序号
+            if (btn) { btn.style.color = '#5fcdd9'; btn.style.borderColor = '#1fb3c4'; }
+            if (label) label.textContent = (n > 1) ? ('CC' + (currentSubtitleIndex + 1)) : 'CC';
+            if (typeof showToast === 'function') showToast(_subT('player.subSwitch') + name, 'success');
+        }
+    } catch (e) {
+        console.error('切换字幕失败:', e);
     }
 }
 

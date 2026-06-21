@@ -119,6 +119,12 @@
             'player.reverseOrder': '倒序排列',
             'player.copyLink': '复制播放链接',
             'player.lockControl': '锁定控制',
+            'player.subtitle': '字幕',
+            'player.subDetected1': '检测到 ',
+            'player.subDetected2': ' 条内嵌字幕',
+            'player.subOff': '字幕已关闭',
+            'player.subSwitch': '字幕：',
+            'player.subTrack': '字幕',
 
             // 关于页
             'about.heading': '关于LibreTV',
@@ -238,6 +244,12 @@
             'player.reverseOrder': 'Reverse Order',
             'player.copyLink': 'Copy play link',
             'player.lockControl': 'Lock controls',
+            'player.subtitle': 'Subtitles',
+            'player.subDetected1': 'Detected ',
+            'player.subDetected2': ' embedded subtitle track(s)',
+            'player.subOff': 'Subtitles off',
+            'player.subSwitch': 'Subtitles: ',
+            'player.subTrack': 'Track',
 
             'about.heading': 'About LibreTV',
             'about.backHome': 'Back to Home',

@@ -1494,78 +1494,229 @@ function toggleControlsLock() {
     }
 }
 
-// ===== 内嵌字幕检测与切换 =====
+// ===== 字幕：加载本地字幕文件 + 选择流内嵌字幕轨 =====
+let externalSubActive = false;   // 是否已加载并显示外部字幕文件
+let externalSubName = '';        // 外部字幕文件名
+let lastSubObjectUrl = null;     // 上一个 ObjectURL，便于释放
+
 // 小工具：取 i18n 文案，i18n.js 未就绪时回退到 key
 function _subT(key) {
     return (typeof t === 'function') ? t(key) : key;
 }
 
-// 切换新流时复位字幕按钮与状态
+// 当前是否有任意字幕在显示（外部或内嵌）
+function _subActive() {
+    return externalSubActive || currentSubtitleIndex >= 0;
+}
+
+// 根据当前状态刷新字幕按钮的高亮与角标
+function _refreshSubtitleButton() {
+    const btn = document.getElementById('subtitleToggle');
+    const label = document.getElementById('subtitleLabel');
+    const active = _subActive();
+    if (btn) {
+        btn.style.color = active ? '#5fcdd9' : '';
+        btn.style.borderColor = active ? '#1fb3c4' : '';
+    }
+    if (label) {
+        if (currentSubtitleIndex >= 0 && subtitleTracks.length > 1) {
+            label.textContent = 'CC' + (currentSubtitleIndex + 1);
+        } else {
+            label.textContent = 'CC';
+        }
+    }
+}
+
+// 切换新流（换集）时复位字幕状态：关闭外部字幕、清空内嵌轨记录
 function resetSubtitleUI() {
     subtitleTracks = [];
     currentSubtitleIndex = -1;
     subtitleDetectToasted = false;
-    const btn = document.getElementById('subtitleToggle');
-    if (btn) {
-        btn.classList.add('hidden');
-        btn.classList.remove('flex');
-        btn.style.color = '';
-        btn.style.borderColor = '';
-    }
-    const label = document.getElementById('subtitleLabel');
-    if (label) label.textContent = 'CC';
+    externalSubActive = false;
+    externalSubName = '';
+    try { if (art && art.subtitle) art.subtitle.show = false; } catch (e) {}
+    if (lastSubObjectUrl) { try { URL.revokeObjectURL(lastSubObjectUrl); } catch (e) {} lastSubObjectUrl = null; }
+    closeSubtitleMenu();
+    _refreshSubtitleButton();
 }
 
-// 检测到内嵌字幕轨：显示字幕按钮并提示（默认不自动开启，交由用户点选）
+// 检测到内嵌字幕轨：记录并提示（按钮常显，默认不强制开启）
 function onSubtitleTracksDetected(hls, tracks) {
     if (!tracks || tracks.length === 0) return;
-    // 已记录同样数量则不重复处理（MANIFEST_PARSED 与 SUBTITLE_TRACKS_UPDATED 可能都触发）
     if (subtitleTracks.length === tracks.length && subtitleDetectToasted) return;
     subtitleTracks = tracks;
-
-    const btn = document.getElementById('subtitleToggle');
-    if (btn) {
-        btn.classList.remove('hidden');
-        btn.classList.add('flex');
-    }
-    // 默认保持关闭，仅提示检测到，避免强制弹字幕
     try { hls.subtitleDisplay = false; hls.subtitleTrack = -1; } catch (e) {}
-    currentSubtitleIndex = -1;
-
+    if (currentSubtitleIndex >= tracks.length) currentSubtitleIndex = -1;
     if (!subtitleDetectToasted && typeof showToast === 'function') {
         subtitleDetectToasted = true;
         showToast(_subT('player.subDetected1') + tracks.length + _subT('player.subDetected2'), 'success');
     }
 }
 
-// 点击字幕按钮：关闭 → 轨0 → 轨1 → … → 关闭，循环切换
-function cycleSubtitle() {
-    if (!currentHls || !subtitleTracks || subtitleTracks.length === 0) return;
-    const n = subtitleTracks.length;
-    currentSubtitleIndex = currentSubtitleIndex + 1;
-    if (currentSubtitleIndex >= n) currentSubtitleIndex = -1;
+// 取当前 <video> 元素（ArtPlayer 构造期 art 可能尚未赋值）
+function _getVideoEl() {
+    if (art && art.video) return art.video;
+    return document.querySelector('#player video') || document.querySelector('.art-video-player video');
+}
 
-    const btn = document.getElementById('subtitleToggle');
-    const label = document.getElementById('subtitleLabel');
+// 健壮地把原生 textTrack 设为显示（hls.js 原生渲染依赖 track.mode==='showing'，
+// 而 ArtPlayer 可能把它改回 hidden，故显式设置并稍后重申一次）
+function _applyNativeTextTrack(idx) {
+    const apply = () => {
+        try {
+            const v = _getVideoEl();
+            if (!v || !v.textTracks) return;
+            let subN = -1;
+            for (let k = 0; k < v.textTracks.length; k++) {
+                const tt = v.textTracks[k];
+                if (tt.kind === 'subtitles' || tt.kind === 'captions') {
+                    subN++;
+                    tt.mode = (subN === idx) ? 'showing' : 'hidden';
+                }
+            }
+        } catch (e) {}
+    };
+    apply();
+    setTimeout(apply, 300);
+    setTimeout(apply, 1200);
+}
+
+// 选择某条内嵌字幕轨
+function selectEmbeddedSubtitle(i) {
+    closeSubtitleMenu();
+    if (!currentHls || !subtitleTracks[i]) return;
+    // 先关掉外部字幕，避免两套字幕叠加
+    if (externalSubActive) { try { art.subtitle.show = false; } catch (e) {} externalSubActive = false; }
     try {
-        if (currentSubtitleIndex === -1) {
-            currentHls.subtitleDisplay = false;
-            currentHls.subtitleTrack = -1;
-            if (btn) { btn.style.color = ''; btn.style.borderColor = ''; }
-            if (label) label.textContent = 'CC';
-            if (typeof showToast === 'function') showToast(_subT('player.subOff'), 'info');
-        } else {
-            currentHls.subtitleTrack = currentSubtitleIndex;
-            currentHls.subtitleDisplay = true;
-            const trk = subtitleTracks[currentSubtitleIndex];
-            const name = (trk && (trk.name || trk.lang)) || (_subT('player.subTrack') + ' ' + (currentSubtitleIndex + 1));
-            // 高亮按钮（青色），多轨时角标显示序号
-            if (btn) { btn.style.color = '#5fcdd9'; btn.style.borderColor = '#1fb3c4'; }
-            if (label) label.textContent = (n > 1) ? ('CC' + (currentSubtitleIndex + 1)) : 'CC';
-            if (typeof showToast === 'function') showToast(_subT('player.subSwitch') + name, 'success');
+        currentHls.subtitleTrack = i;
+        currentHls.subtitleDisplay = true;
+        currentSubtitleIndex = i;
+        _applyNativeTextTrack(i);
+        const trk = subtitleTracks[i];
+        const name = (trk && (trk.name || trk.lang)) || (_subT('player.subTrack') + ' ' + (i + 1));
+        if (typeof showToast === 'function') showToast(_subT('player.subSwitch') + name, 'success');
+    } catch (e) { console.error('切换内嵌字幕失败:', e); }
+    _refreshSubtitleButton();
+}
+
+// 关闭所有字幕
+function disableSubtitle() {
+    closeSubtitleMenu();
+    try {
+        if (currentHls) { currentHls.subtitleDisplay = false; currentHls.subtitleTrack = -1; }
+    } catch (e) {}
+    _applyNativeTextTrack(-1);
+    currentSubtitleIndex = -1;
+    if (externalSubActive) { try { art.subtitle.show = false; } catch (e) {} externalSubActive = false; }
+    if (typeof showToast === 'function') showToast(_subT('player.subOff'), 'info');
+    _refreshSubtitleButton();
+}
+
+// 打开文件选择器加载本地字幕
+function pickSubtitleFile() {
+    closeSubtitleMenu();
+    const input = document.getElementById('subtitleFileInput');
+    if (input) { input.value = ''; input.click(); }
+}
+
+// 处理选中的本地字幕文件（.srt/.vtt/.ass）
+function onSubtitleFileChosen(input) {
+    const file = input && input.files && input.files[0];
+    if (!file) return;
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const typeMap = { srt: 'srt', vtt: 'vtt', ass: 'ass', ssa: 'ass' };
+    const type = typeMap[ext];
+    if (!type) {
+        if (typeof showToast === 'function') showToast(_subT('player.subFormatErr'), 'warning');
+        return;
+    }
+    if (!art || !art.subtitle) {
+        if (typeof showToast === 'function') showToast(_subT('player.subNoPlayer'), 'warning');
+        return;
+    }
+    // 关闭内嵌字幕，避免叠加
+    if (currentSubtitleIndex >= 0) {
+        try { currentHls.subtitleDisplay = false; currentHls.subtitleTrack = -1; } catch (e) {}
+        _applyNativeTextTrack(-1);
+        currentSubtitleIndex = -1;
+    }
+    if (lastSubObjectUrl) { try { URL.revokeObjectURL(lastSubObjectUrl); } catch (e) {} }
+    const url = URL.createObjectURL(file);
+    lastSubObjectUrl = url;
+    try {
+        const p = art.subtitle.switch(url, { name: file.name, type: type, escape: false });
+        // switch 可能返回 Promise；无论如何都尝试显示
+        if (p && typeof p.then === 'function') {
+            p.then(() => { try { art.subtitle.show = true; } catch (e) {} });
         }
+        try { art.subtitle.show = true; } catch (e) {}
+        externalSubActive = true;
+        externalSubName = file.name;
+        if (typeof showToast === 'function') showToast(_subT('player.subLoaded') + file.name, 'success');
     } catch (e) {
-        console.error('切换字幕失败:', e);
+        console.error('加载字幕文件失败:', e);
+        if (typeof showToast === 'function') showToast(_subT('player.subLoadErr'), 'error');
+    }
+    _refreshSubtitleButton();
+}
+
+// 构建并打开/关闭字幕菜单
+function toggleSubtitleMenu(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('subtitleMenu');
+    if (!menu) return;
+    if (!menu.classList.contains('hidden')) { closeSubtitleMenu(); return; }
+    buildSubtitleMenu();
+    menu.classList.remove('hidden');
+    // 点击其他位置关闭
+    setTimeout(() => document.addEventListener('click', _subtitleOutsideClick), 0);
+}
+
+function _subtitleOutsideClick(ev) {
+    const wrap = document.getElementById('subtitleControl');
+    if (wrap && !wrap.contains(ev.target)) closeSubtitleMenu();
+}
+
+function closeSubtitleMenu() {
+    const menu = document.getElementById('subtitleMenu');
+    if (menu) menu.classList.add('hidden');
+    document.removeEventListener('click', _subtitleOutsideClick);
+}
+
+function buildSubtitleMenu() {
+    const menu = document.getElementById('subtitleMenu');
+    if (!menu) return;
+    menu.innerHTML = '';
+    const mkItem = (text, onClick, active) => {
+        const b = document.createElement('button');
+        b.className = 'w-full text-left px-3 py-2 hover:bg-[#2a2a2a] transition-colors flex items-center gap-2'
+            + (active ? ' text-[#5fcdd9]' : ' text-gray-200');
+        b.textContent = (active ? '✓ ' : '') + text;
+        b.onclick = (ev) => { ev.stopPropagation(); onClick(); };
+        return b;
+    };
+    const mkDivider = () => {
+        const d = document.createElement('div');
+        d.className = 'my-1 border-t border-[#333]';
+        return d;
+    };
+    // 加载本地字幕
+    menu.appendChild(mkItem(_subT('player.subLoad'), pickSubtitleFile, false));
+    if (externalSubActive) {
+        menu.appendChild(mkItem(externalSubName || _subT('player.subtitle'), () => closeSubtitleMenu(), true));
+    }
+    // 内嵌字幕轨
+    if (subtitleTracks && subtitleTracks.length > 0) {
+        menu.appendChild(mkDivider());
+        subtitleTracks.forEach((trk, i) => {
+            const name = (trk && (trk.name || trk.lang)) || (_subT('player.subTrack') + ' ' + (i + 1));
+            menu.appendChild(mkItem(name, () => selectEmbeddedSubtitle(i), currentSubtitleIndex === i));
+        });
+    }
+    // 关闭字幕
+    if (_subActive()) {
+        menu.appendChild(mkDivider());
+        menu.appendChild(mkItem(_subT('player.subDisable'), disableSubtitle, false));
     }
 }
 

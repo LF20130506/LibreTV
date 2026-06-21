@@ -125,6 +125,12 @@
             'player.subOff': '字幕已关闭',
             'player.subSwitch': '字幕：',
             'player.subTrack': '字幕',
+            'player.subLoad': '加载本地字幕…',
+            'player.subDisable': '关闭字幕',
+            'player.subLoaded': '已加载字幕：',
+            'player.subFormatErr': '不支持的字幕格式（支持 srt/vtt/ass）',
+            'player.subLoadErr': '字幕加载失败',
+            'player.subNoPlayer': '播放器未就绪，请稍后再试',
 
             // 关于页
             'about.heading': '关于LibreTV',
@@ -250,6 +256,12 @@
             'player.subOff': 'Subtitles off',
             'player.subSwitch': 'Subtitles: ',
             'player.subTrack': 'Track',
+            'player.subLoad': 'Load subtitle file…',
+            'player.subDisable': 'Turn off subtitles',
+            'player.subLoaded': 'Subtitle loaded: ',
+            'player.subFormatErr': 'Unsupported format (srt/vtt/ass)',
+            'player.subLoadErr': 'Failed to load subtitle',
+            'player.subNoPlayer': 'Player not ready, please try again',
 
             'about.heading': 'About LibreTV',
             'about.backHome': 'Back to Home',

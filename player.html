@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh" data-i18n-doctitle="title.player">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/player.css">
     <link rel="stylesheet" href="css/glass-theme.css">
+    <script>try{var l=localStorage.getItem('ltLang');document.documentElement.setAttribute('lang', l==='en'?'en':'zh');}catch(e){}</script>
 
     <meta http-equiv="Cache-Control" content="no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -56,24 +57,30 @@
                 <path d="M5.25 11h15a1.5 1.5 0 1 1 0 3H5.25a1.5 1.5 0 0 1 0-3z"/>
                 <path d="M5.55 12 11.3 17.3a1.5 1.5 0 1 1-2.12 2.12L3 12l6.18-6.18a1.5 1.5 0 1 1 2.12 2.12L5.55 12z"/>
             </svg>
-            <span class="home-btn-text">上一页</span>
+            <span class="home-btn-text" data-i18n="player.back">上一页</span>
         </a>
+        <button id="langToggleBtn" onclick="toggleLang()" class="px-3 py-2 bg-[#222] hover:bg-[#333] border border-[#333] rounded-lg transition-colors flex items-center gap-1 flex-shrink-0" aria-label="切换语言 / Switch Language" data-i18n-aria-label="nav.language">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18M12 3a9 9 0 100 18 9 9 0 000-18z"></path>
+            </svg>
+            <span class="lang-label text-xs font-semibold leading-none">EN</span>
+        </button>
     </header>
 
     <!-- 密码验证弹窗 -->
     <div id="passwordModal" class="fixed inset-0 bg-black/95 hidden items-center justify-center z-[65] transition-opacity duration-300">
         <div class="bg-[#111] p-8 rounded-lg w-11/12 max-w-md border border-[#333] max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-6 flex-none">
-                <h2 class="text-2xl font-bold gradient-text">访问验证</h2>
+                <h2 class="text-2xl font-bold gradient-text" data-i18n="pwd.title">访问验证</h2>
             </div>
             <div class="mb-6">
-                <p class="text-gray-300 mb-4">请输入密码继续访问</p>
+                <p class="text-gray-300 mb-4" data-i18n="pwd.prompt">请输入密码继续访问</p>
                 <form id="passwordForm" onsubmit="handlePasswordSubmit(); return false;">
                     <input type="text" name="username" id="username" autocomplete="username" style="display:none" tabindex="-1" aria-hidden="true">
-                    <input type="password" id="passwordInput" class="w-full bg-[#111] border border-[#333] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-white transition-colors" placeholder="密码..." autocomplete="new-password">
-                    <button id="passwordSubmitBtn" type="submit" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">提交</button>
+                    <input type="password" id="passwordInput" class="w-full bg-[#111] border border-[#333] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-white transition-colors" placeholder="密码..." data-i18n-placeholder="pwd.placeholder" autocomplete="new-password">
+                    <button id="passwordSubmitBtn" type="submit" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" data-i18n="pwd.submit">提交</button>
                 </form>
-                <p id="passwordError" class="text-red-500 mt-2 hidden">密码错误，请重试</p>
+                <p id="passwordError" class="text-red-500 mt-2 hidden" data-i18n="pwd.error">密码错误，请重试</p>
             </div>
         </div>
     </div>
@@ -85,17 +92,17 @@
                     <!-- Initial loading state before JavaScript loads -->
                     <div class="player-loading-overlay">
                         <div class="player-loading-spinner"></div>
-                        <div class="player-loading-text" id="loading-title">正在加载视频...</div>
+                        <div class="player-loading-text" id="loading-title" data-i18n="player.loadingVideo">正在加载视频...</div>
                     </div>
                 </div>
                 <div class="loading-container" id="player-loading" style="display: none;">
                     <div class="loading-spinner"></div>
-                    <div>正在加载视频...</div>
+                    <div data-i18n="player.loadingVideo">正在加载视频...</div>
                 </div>
                 <div class="error-container" id="error">
                     <div class="error-icon">⚠️</div>
-                    <div id="error-message">视频加载失败</div>
-                    <div class="error-message-sub">请尝试其他视频源或稍后重试</div>
+                    <div id="error-message" data-i18n="player.loadFailed">视频加载失败</div>
+                    <div class="error-message-sub" data-i18n="player.loadFailedSub">请尝试其他视频源或稍后重试</div>
                 </div>
             </div>
         </div>
@@ -112,11 +119,11 @@
                     <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
-                    上一集
+                    <span data-i18n="player.prevEp">上一集</span>
                 </button>
-                <span class="text-gray-400" id="episodeInfo">加载中...</span>
+                <span class="text-gray-400" id="episodeInfo" data-i18n="common.loading">加载中...</span>
                 <button onclick="playNextEpisode()" id="nextButton" class="px-4 py-2 bg-[#222] hover:bg-[#333] border border-[#333] rounded-lg transition-colors">
-                    下一集
+                    <span data-i18n="player.nextEp">下一集</span>
                     <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
@@ -129,7 +136,7 @@
             <div class="flex flex-wrap justify-end items-center gap-2">
                 <!-- 自动连播开关 - 分组到左边 -->
                 <div class="flex items-center gap-1 flex-shrink-0 mr-auto">
-                    <span class="text-gray-400 text-sm whitespace-nowrap">自动连播</span>
+                    <span class="text-gray-400 text-sm whitespace-nowrap" data-i18n="player.autoplay">自动连播</span>
                     <label class="switch">
                         <input type="checkbox" id="autoplayToggle">
                         <span class="slider"></span>
@@ -143,18 +150,18 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" id="orderIcon" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd" />
                         </svg>
-                        <span id="orderText">倒序排列</span>
+                        <span id="orderText" data-i18n="player.reverseOrder">倒序排列</span>
                     </button>
-                    
+
                     <!-- 复制链接按钮 -->
-                    <button title="复制播放链接" onclick="copyLinks()" class="px-2 py-1 bg-[#222] hover:bg-[#333] border border-[#333] text-white rounded-lg transition">
+                    <button title="复制播放链接" data-i18n-title="player.copyLink" onclick="copyLinks()" class="px-2 py-1 bg-[#222] hover:bg-[#333] border border-[#333] text-white rounded-lg transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                         </svg>
                     </button>
                     
                     <!-- 锁定控制按钮 - 始终显示在最右侧 -->
-                    <button id="lockToggle" onclick="toggleControlsLock()" title="锁定控制" 
+                    <button id="lockToggle" onclick="toggleControlsLock()" title="锁定控制" data-i18n-title="player.lockControl"
                             class="px-2 py-1 bg-[#222] hover:bg-[#333] border border-[#333] text-white rounded-lg transition flex-shrink-0">
                         <svg id="lockIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <!-- 默认状态：未锁图标 -->
@@ -171,7 +178,7 @@
             <div class="episode-grid" id="episodesGrid">
                 <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2" id="episodesList">
                     <!-- 集数将在这里动态加载 -->
-                    <div class="col-span-full text-center text-gray-400 py-8">加载中...</div>
+                    <div class="col-span-full text-center text-gray-400 py-8" data-i18n="common.loading">加载中...</div>
                 </div>
             </div>
         </div>
@@ -196,18 +203,18 @@
                         </svg>
                         <span class="gradient-text font-bold">LibreTV</span>
                     </div>
-                    <p class="text-gray-500 text-sm mt-2 text-center md:text-left">© 2025 LibreTV - 自由观影，畅享精彩</p>
+                    <p class="text-gray-500 text-sm mt-2 text-center md:text-left" data-i18n="footer.copyright">© 2025 LibreTV - 自由观影，畅享精彩</p>
                 </div>
-                
+
                 <div class="text-center md:text-right">
-                    <p class="text-gray-500 text-sm max-w-md">
+                    <p class="text-gray-500 text-sm max-w-md" data-i18n="footer.disclaimer">
                         免责声明：本站仅为视频搜索工具，不存储、上传或分发任何视频内容。
                         所有视频均来自第三方API接口。如有侵权，请联系相关内容提供方。
                     </p>
                     <div class="mt-2 flex justify-center md:justify-end space-x-4">
-                        <a href="about.html" class="text-gray-400 hover:text-white text-sm transition-colors">关于我们</a>
-                        <a href="about.html" class="text-gray-400 hover:text-white text-sm transition-colors">隐私政策</a>
-                        <a href="https://www.msf.hk/zh-hant/donate/general?type=one-off" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 text-sm transition-colors">捐赠</a>
+                        <a href="about.html" class="text-gray-400 hover:text-white text-sm transition-colors" data-i18n="footer.about">关于我们</a>
+                        <a href="about.html" class="text-gray-400 hover:text-white text-sm transition-colors" data-i18n="footer.privacy">隐私政策</a>
+                        <a href="https://www.msf.hk/zh-hant/donate/general?type=one-off" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 text-sm transition-colors" data-i18n="footer.donate">捐赠</a>
                     </div>
                 </div>
             </div>
@@ -232,7 +239,7 @@
     <div id="loading" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[10001]">
         <div class="bg-[#111] p-8 rounded-lg border border-[#333] flex items-center space-x-4">
             <div class="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-white text-lg">加载中...</p>
+            <p class="text-white text-lg" data-i18n="common.loading">加载中...</p>
         </div>
     </div>
 
@@ -247,6 +254,7 @@
     <script src="libs/artplayer.min.js" crossorigin="anonymous"></script>
 
     <script src="js/config.js"></script>
+    <script src="js/i18n.js"></script>
     <script src="js/password.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/api.js"></script>

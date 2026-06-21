@@ -30,8 +30,10 @@
     --glass-border-strong: rgba(31, 179, 196, 0.55);
     /* 小尺寸药丸标签（最近搜索/豆瓣标签）：需在浅色海景背景上清晰可见，
        故比 ≤15% 的大面板填充更实一些，靠较高白磨砂 + 描边读出"底" */
-    --chip-bg: rgba(255, 255, 255, 0.55);
-    --chip-bg-hover: rgba(255, 255, 255, 0.78);
+    /* 小药丸（最近搜索/豆瓣标签）的底色：顶部页面背景是近白的暖象牙(#fdfcf6)，
+       白色磨砂在上面几乎看不见，故用「带青味的浅色」实底 + 下面的青边/投影才读得出"底"。 */
+    --chip-bg: rgba(219, 240, 241, 0.96);
+    --chip-bg-hover: rgba(198, 233, 236, 0.98);
     --glass-highlight: rgba(255, 255, 255, 0.85); /* 顶部高光 */
     --glass-blur: 24px;                           /* 加大模糊补足玻璃质感 */
     --glass-blur-strong: 38px;
@@ -329,13 +331,15 @@ body.player-active #settingsPanel {
 .search-tag {
     border-radius: var(--radius-pill) !important;
     background: var(--chip-bg) !important;
-    border: 1px solid var(--glass-border) !important;
+    border: 1px solid var(--glass-border-strong) !important;     /* 清晰可见的青色描边 */
+    box-shadow: 0 1px 6px rgba(31, 90, 100, 0.18) !important;     /* 浮起投影，和浅底分离 */
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 }
 .search-tag:hover {
     border-color: var(--glass-border-strong) !important;
     background: var(--chip-bg-hover) !important;
+    box-shadow: 0 2px 10px rgba(31, 90, 100, 0.24) !important;
 }
 
 /* ============================================================

@@ -257,6 +257,16 @@
                 </div>
             </div>
 
+            <!-- 自定义代理地址区域 -->
+            <div class="p-3 bg-[#151515] rounded-lg shadow-inner">
+                <label class="block text-sm font-medium text-gray-400 mb-1 border-b border-[#333] pb-1" data-i18n="settings.customProxy">自定义代理地址</label>
+                <p class="text-xs text-gray-500 mb-3" data-i18n="settings.customProxyDesc">填自建的 /proxy/ 地址可换区域/节点（仅影响搜索与详情请求，不重路由视频分片）。留空用默认。保存后刷新生效。</p>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="customProxyInput" placeholder="https://your-proxy.example.com/proxy/" class="flex-1 bg-[#222] border border-[#333] text-white px-2 py-1 rounded" autocomplete="off">
+                    <button onclick="saveProxySetting()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs whitespace-nowrap" data-i18n="settings.save">保存</button>
+                </div>
+            </div>
+
             <!-- 一般功能区域 -->
             <div class="p-3 bg-[#151515] rounded-lg shadow-inner">
                 <label class="block text-sm font-medium text-gray-400 mb-3 border-b border-[#333] pb-1" data-i18n="settings.generalFunc">一般功能</label>
@@ -511,6 +521,7 @@
     <script src="js/watch-providers.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/history-sync.js"></script>
+    <script src="js/proxy-setting.js"></script>
     <script src="js/api.js"></script>
     <script src="js/douban.js"></script>
     <script src="js/password.js"></script>

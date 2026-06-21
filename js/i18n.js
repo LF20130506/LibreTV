@@ -63,6 +63,8 @@
             'settings.historySyncDesc': '填写用户名后，观看历史将绑定该名字保存到云端（KV），多设备共享；留空则仅保存在本地。',
             'settings.usernamePlaceholder': '用户名（留空则仅本地）',
             'settings.usernameSave': '保存并同步',
+            'settings.customProxy': '自定义代理地址',
+            'settings.customProxyDesc': '填自建的 /proxy/ 地址可换区域/节点（仅影响搜索与详情请求，不重路由视频分片）。留空用默认。保存后刷新生效。',
             'settings.generalFunc': '一般功能',
             'settings.importConfig': '导入配置',
             'settings.exportConfig': '导出配置',
@@ -160,6 +162,9 @@
             'toast.userSaved': '已保存用户名，历史已与云端同步',
             'toast.userCleared': '已清除用户名，停止云同步（历史仅保存在本地）',
             'toast.syncFail': '云同步不可用（KV 未配置或网络问题），已仅保存在本地',
+            'toast.proxySaved': '已保存代理地址，刷新后生效',
+            'toast.proxyReset': '已恢复默认代理（同源 /proxy/），刷新后生效',
+            'toast.proxyInvalid': '代理地址需以 http:// 或 https:// 开头',
         },
         en: {
             'title.index': 'LibreTV - Free Online Video Search & Streaming',
@@ -208,6 +213,8 @@
             'settings.historySyncDesc': 'Set a username to bind your watch history and save it in the cloud (KV), shared across devices. Leave empty to keep it local only.',
             'settings.usernamePlaceholder': 'Username (empty = local only)',
             'settings.usernameSave': 'Save & Sync',
+            'settings.customProxy': 'Custom Proxy URL',
+            'settings.customProxyDesc': 'Point to your own /proxy/ endpoint to switch region/node (affects search & detail requests only, not video segments). Empty = default. Reload to take effect.',
             'settings.generalFunc': 'General',
             'settings.importConfig': 'Import Config',
             'settings.exportConfig': 'Export Config',
@@ -296,6 +303,9 @@
             'toast.userSaved': 'Username saved; history synced with the cloud',
             'toast.userCleared': 'Username cleared; cloud sync off (history kept locally)',
             'toast.syncFail': 'Cloud sync unavailable (KV not configured or network issue); saved locally only',
+            'toast.proxySaved': 'Proxy URL saved; reload to take effect',
+            'toast.proxyReset': 'Reverted to the default proxy (same-origin /proxy/); reload to take effect',
+            'toast.proxyInvalid': 'Proxy URL must start with http:// or https://',
         },
     };
 

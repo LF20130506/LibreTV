@@ -1,5 +1,15 @@
 // 全局常量配置
-const PROXY_URL = '/proxy/';    // 适用于 Cloudflare, Netlify (带重写), Vercel (带重写)
+// 代理基址：默认同源 '/proxy/'；可在设置里填自建代理地址覆盖（仅影响搜索/详情等 API 请求，
+// 不改变视频分片的直连路由）。保存后刷新生效。
+const PROXY_URL = (function () {
+    try {
+        const c = (localStorage.getItem('customProxyUrl') || '').trim();
+        if (c && /^https?:\/\//i.test(c)) {
+            return c.endsWith('/') ? c : c + '/';
+        }
+    } catch (e) {}
+    return '/proxy/';
+})();    // 适用于 Cloudflare, Netlify (带重写), Vercel (带重写)
 // const HOPLAYER_URL = 'https://hoplayer.com/index.html';
 const SEARCH_HISTORY_KEY = 'videoSearchHistory';
 const MAX_HISTORY_ITEMS = 5;

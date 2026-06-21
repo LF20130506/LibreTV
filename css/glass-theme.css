@@ -28,6 +28,10 @@
     --glass-bg-soft: rgba(231, 245, 244, 0.08);  /* 内嵌块（更淡）*/
     --glass-border: rgba(60, 110, 110, 0.18);    /* 可见的浅色描边 */
     --glass-border-strong: rgba(31, 179, 196, 0.55);
+    /* 小尺寸药丸标签（最近搜索/豆瓣标签）：需在浅色海景背景上清晰可见，
+       故比 ≤15% 的大面板填充更实一些，靠较高白磨砂 + 描边读出"底" */
+    --chip-bg: rgba(255, 255, 255, 0.55);
+    --chip-bg-hover: rgba(255, 255, 255, 0.78);
     --glass-highlight: rgba(255, 255, 255, 0.85); /* 顶部高光 */
     --glass-blur: 24px;                           /* 加大模糊补足玻璃质感 */
     --glass-blur-strong: 38px;
@@ -324,14 +328,14 @@ body.player-active #settingsPanel {
 /* 搜索历史标签 */
 .search-tag {
     border-radius: var(--radius-pill) !important;
-    background: var(--glass-bg-soft) !important;
+    background: var(--chip-bg) !important;
     border: 1px solid var(--glass-border) !important;
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 }
 .search-tag:hover {
     border-color: var(--glass-border-strong) !important;
-    background: var(--glass-bg) !important;
+    background: var(--chip-bg-hover) !important;
 }
 
 /* ============================================================
@@ -708,7 +712,7 @@ body.page-bg {
 .page-bg .douban-refresh-button:hover { background: #268049 !important; }
 .page-bg .douban-tag,
 .page-bg .recent-search-tag {
-    background: var(--glass-bg-soft) !important;
+    background: var(--chip-bg) !important;
     border: 1px solid var(--glass-border) !important;
     color: var(--text-color) !important;
     border-radius: var(--radius-pill) !important;
@@ -778,6 +782,8 @@ html[data-theme="contrast"] {
     --glass-bg-soft: #1c1c1c;
     --glass-border: #8a8a8a;         /* 清晰可见描边 */
     --glass-border-strong: #ffd60a;
+    --chip-bg: #1c1c1c;              /* 黑底上可见的深灰药丸 */
+    --chip-bg-hover: #2a2a2a;
     --glass-highlight: rgba(255, 255, 255, 0);
     --glass-blur: 0px;               /* 关闭毛玻璃 */
     --glass-blur-strong: 0px;

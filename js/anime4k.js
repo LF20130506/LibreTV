@@ -17,6 +17,9 @@
         sr_strong:    { mode: 1, sharp: 0.85, line: 0.0 }, // 降噪 强（老片噪点重时）
         clear:        { mode: 2, sharp: 0.45, line: 0.0 }, // 实拍超清（中等清晰）
         clear_strong: { mode: 2, sharp: 0.75, line: 0.0 }, // 超清 强
+        // 老剧超清（两遍）：先双边降噪去色块/噪点(pass1,源分辨率)，再 CAS 放大+锐化(pass2,输出分辨率)。
+        // denoise 字段触发两遍管线；sharp 为第二遍 CAS 锐度，denoise 为第一遍降噪强度。
+        sr_clear:     { mode: 2, sharp: 0.55, line: 0.0, denoise: 0.55 },
     };
 
     const VERT = `#version 300 es
@@ -118,6 +121,8 @@
     }`;
 
     let gl = null, canvas = null, program = null, vao = null, tex = null;
+    // 两遍超分用的中间帧缓冲（pass1 降噪结果，源分辨率）
+    let fbo = null, denoiseTex = null, fboW = 0, fboH = 0;
     let uTexel, uTexelOut, uSharp, uLine, uMode;
     let rafId = 0, rvfcHandle = 0, running = false;
     let videoEl = null, profile = PROFILES.a4k;
@@ -165,6 +170,7 @@
             try { if (resizeObs) resizeObs.disconnect(); } catch (_) {}
             try { if (canvas && canvas.parentElement) canvas.parentElement.removeChild(canvas); } catch (_) {}
             gl = null; canvas = null; program = null; vao = null; tex = null; resizeObs = null;
+            fbo = null; denoiseTex = null; fboW = 0; fboH = 0;
         }, false);
 
         const vs = compile(gl.VERTEX_SHADER, VERT);
@@ -277,6 +283,23 @@
     function getOutputHeight() { return running ? outputHeight : 0; }
     function getOutputWidth() { return running ? outputWidth : 0; }
 
+    // 确保两遍超分的中间帧缓冲存在且尺寸=源分辨率（pass1 降噪结果落在这里）
+    function ensureFBO(sw, sh) {
+        if (denoiseTex && fboW === sw && fboH === sh) return;
+        if (!fbo) fbo = gl.createFramebuffer();
+        if (!denoiseTex) denoiseTex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, denoiseTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, sw, sh, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); // pass2 按输出像素采样=双线性放大
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, denoiseTex, 0);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        fboW = sw; fboH = sh;
+    }
+
     function renderFrame() {
         if (!running || !videoEl) return;
         try {
@@ -286,14 +309,35 @@
                 gl.bindTexture(gl.TEXTURE_2D, tex);
                 // 可能抛 SecurityError（视频被跨域污染）→ 由外层 catch 关闭
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, videoEl);
-                // mode 1(降噪)/2(CAS) 的 sharp 取值有限，用倍率时做钳制；mode 0 可超过 1
-                gl.uniform1f(uSharp, profile.mode === 0
-                    ? profile.sharp * strengthMult
-                    : Math.min(profile.mode === 2 ? 0.98 : 1.2, profile.sharp * strengthMult));
                 gl.uniform1f(uLine, profile.line * strengthMult);
-                gl.uniform1i(uMode, profile.mode | 0);
                 gl.bindVertexArray(vao);
-                gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+                if (profile.denoise) {
+                    // ===== 两遍超分（老剧超清）=====
+                    const sw = videoEl.videoWidth, sh = videoEl.videoHeight;
+                    ensureFBO(sw, sh);
+                    // pass 1：双边降噪(mode 1) → FBO（源分辨率，1:1）
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+                    gl.viewport(0, 0, sw, sh);
+                    gl.uniform1i(uMode, 1);
+                    gl.uniform1f(uSharp, Math.min(1.2, profile.denoise * strengthMult));
+                    gl.drawArrays(gl.TRIANGLES, 0, 3);
+                    // pass 2：CAS 放大+锐化(mode 2)，输入=降噪结果 → 画布（输出分辨率）
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                    gl.viewport(0, 0, outputWidth, outputHeight);
+                    gl.bindTexture(gl.TEXTURE_2D, denoiseTex);
+                    gl.uniform1i(uMode, 2);
+                    gl.uniform1f(uSharp, Math.min(0.98, profile.sharp * strengthMult));
+                    gl.drawArrays(gl.TRIANGLES, 0, 3);
+                } else {
+                    // ===== 单遍 =====
+                    // mode 1(降噪)/2(CAS) 的 sharp 取值有限，用倍率时做钳制；mode 0 可超过 1
+                    gl.uniform1f(uSharp, profile.mode === 0
+                        ? profile.sharp * strengthMult
+                        : Math.min(profile.mode === 2 ? 0.98 : 1.2, profile.sharp * strengthMult));
+                    gl.uniform1i(uMode, profile.mode | 0);
+                    gl.drawArrays(gl.TRIANGLES, 0, 3);
+                }
             }
         } catch (e) {
             console.warn('[Anime4K] 渲染失败，已关闭:', e && e.message);

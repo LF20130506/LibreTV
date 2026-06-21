@@ -26,6 +26,7 @@
         { value: 'a4k_strong',   html: 'Anime4K 强',    filter: '', anime4k: 'a4k_strong' },
         { value: 'clear',        html: '实拍超清',       filter: '', anime4k: 'clear' },
         { value: 'clear_strong', html: '超清 强',        filter: '', anime4k: 'clear_strong' },
+        { value: 'sr_clear',     html: '老剧超清(降噪+锐化)', filter: '', anime4k: 'sr_clear' },
         { value: 'sr',           html: '老片降噪',       filter: '', anime4k: 'sr' },
         { value: 'sr_strong',    html: '降噪 强',        filter: '', anime4k: 'sr_strong' },
     ];
@@ -45,10 +46,10 @@
         const sh = (art && art.video && art.video.videoHeight) || 0;
         if (classifyContent()) return 'a4k';
         // 老剧/标清实拍（如《康熙微服私访记》~480p）：以前只做双边降噪、不锐化也不放大，
-        // 画面依旧发糊。改走 CAS 超清——双线性放大到目标分辨率 + 对比度自适应锐化
-        // （钳制邻域 min/max，无白边/光晕），让老片真正变清晰。
-        // 若某源噪点过重，可手动切「老片降噪」或调低「增强强度」。
-        if (sh && sh <= 576) return 'clear_strong';
+        // 画面依旧发糊。改走「老剧超清」两遍管线——先双边降噪去色块/噪点，再 CAS 双线性
+        // 放大到目标分辨率 + 对比度自适应锐化（钳制 min/max，无白边/光晕），老片真正变清晰。
+        // 若某源噪点过重可手动切「老片降噪」，或调低「增强强度」。
+        if (sh && sh <= 576) return 'sr_clear';
         const s = getStrength();
         return s >= 1.25 ? 'strong' : (s >= 0.85 ? 'standard' : 'light');
     }

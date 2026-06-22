@@ -273,7 +273,7 @@ body.player-active #settingsPanel {
 /* LibreTV 标志后的毛玻璃底板（圆角 6.618）*/
 .page-bg .logo-glass {
     padding: 0.5rem 1.1rem;
-    border-radius: 0.6618rem; /* 6.618px 太小看不出圆角，放大到 ~10.6px 明显可见（保留 6.618）*/
+    border-radius: var(--radius-md); /* 统一到圆角令牌(16px)，与下方搜索栏一致；不再用 0.6618rem 魔法值 */
     background: var(--glass-bg-strong);
     -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
     backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);

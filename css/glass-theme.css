@@ -64,6 +64,8 @@
     pointer-events: none;
     z-index: -1;
     background:
+        radial-gradient(30vw 18vw at 44% 4%, rgba(31, 179, 196, 0.22), transparent 60%),    /* logo 后青晕：给玻璃可虚化的底色 */
+        radial-gradient(24vw 16vw at 60% 7%, rgba(242, 166, 90, 0.16), transparent 60%),     /* logo 后暖晕：玻璃里冷暖交融 */
         radial-gradient(95vw 55vw at 50% 120%, rgba(31, 179, 196, 0.24), transparent 64%),   /* 底部海水 */
         radial-gradient(52vw 52vw at 88% -12%, rgba(242, 166, 90, 0.20), transparent 60%);   /* 右上暖阳 */
 }
@@ -274,11 +276,11 @@ body.player-active #settingsPanel {
 .page-bg .logo-glass {
     padding: 0.5rem 1.1rem;
     border-radius: var(--radius-md); /* 统一到圆角令牌(16px)，与下方搜索栏一致 */
-    /* 顶部是近白象牙底、logo 背后没有内容可供模糊，纯透明玻璃在这里"看不见"——
-       用一道斜向玻璃高光渐变 + 清晰冷色边把玻璃质感做出来（背后有内容透出时模糊仍生效）。 */
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(223, 242, 243, 0.30) 100%);
-    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-    backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+    /* logo 背后已铺了青/暖色晕（见 .page-bg::before），这里用「薄玻璃 + 强模糊」把那片
+       颜色虚化揉开 → 真正的毛玻璃；只留一道很淡的高光渐变和清晰冷色边勾轮廓。 */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 100%);
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(200%);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(200%);
     border: 1px solid rgba(120, 180, 185, 0.45);
     box-shadow: var(--glass-shadow);
 }

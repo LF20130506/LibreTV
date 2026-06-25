@@ -192,6 +192,7 @@
             'toast.favAdded': '已收藏',
             'toast.favRemoved': '已取消收藏',
             'toast.favCleared': '收藏已清空',
+            'toast.settingsSynced': '已从云端同步设置（部分需刷新生效）',
         },
         en: {
             'title.index': 'LibreTV - Free Online Video Search & Streaming',
@@ -360,6 +361,7 @@
             'toast.favAdded': 'Added to favorites',
             'toast.favRemoved': 'Removed from favorites',
             'toast.favCleared': 'Favorites cleared',
+            'toast.settingsSynced': 'Settings synced from the cloud (some need a refresh)',
         },
     };
 

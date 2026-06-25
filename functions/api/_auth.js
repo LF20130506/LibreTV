@@ -111,6 +111,22 @@ function normalizeUser(u) {
 function getKV(env) {
     return (env && (env.LIBRETV_KV || env.LIBRETV_PROXY_KV)) || null;
 }
+// 统一身份解析：优先会话（登录用户）；否则回退到旧的 ?user= + X-Auth-Hash（站点密码模式，向后兼容）。
+// 返回 userId 字符串或 null。
+async function resolveIdentity(request, env) {
+    const sess = await readSession(request, env);
+    if (sess) return sess.userId;
+    let user = null;
+    try { user = normalizeUser(new URL(request.url).searchParams.get('user')); } catch (e) {}
+    if (!user) return null;
+    const pw = (env && env.PASSWORD) || '';
+    if (pw) {
+        const sent = (request.headers.get('X-Auth-Hash') || '').toLowerCase();
+        const expect = (await sha256Hex(pw)).toLowerCase();
+        if (!sent || !timingSafeEqual(sent, expect)) return null;
+    }
+    return user;
+}
 function isSecure(request) {
     try { return new URL(request.url).protocol === 'https:'; } catch (e) { return true; }
 }
@@ -125,5 +141,5 @@ export {
     COOKIE, DEFAULT_TTL,
     b64urlEncode, b64urlDecode, bytesToHex, hexToBytes, timingSafeEqual, sha256Hex,
     issueSession, verifySession, readCookie, readSession, buildSessionCookie, clearSessionCookie,
-    pbkdf2Hash, pbkdf2Verify, normalizeUser, getKV, isSecure, json,
+    pbkdf2Hash, pbkdf2Verify, normalizeUser, getKV, resolveIdentity, isSecure, json,
 };

@@ -15,7 +15,55 @@
     }
     function saveFavorites(arr) {
         try { localStorage.setItem(KEY, JSON.stringify(arr.slice(0, MAX))); } catch (e) {}
-        if (global.HistorySync && global.FavoritesSyncEnabled) { /* 预留：将来可接 KV 同步 */ }
+        pushFav(); // 登录态下防抖同步到 KV
+    }
+
+    // ===== 云同步（仅登录态；未登录纯本地，行为不变）=====
+    const API = '/api/favorites';
+    function syncEnabled() {
+        try { return !!(global.Account && global.Account.isLoggedIn && global.Account.isLoggedIn()); } catch (e) { return false; }
+    }
+    let pushTimer = null;
+    function doPushFav() {
+        return fetch(API, {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ favorites: getFavorites() }), keepalive: true,
+        }).catch(function () {});
+    }
+    function pushFav(immediate) {
+        if (!syncEnabled()) return;
+        if (immediate) { if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; } doPushFav(); return; }
+        if (pushTimer) clearTimeout(pushTimer);
+        pushTimer = setTimeout(doPushFav, 1500);
+    }
+    function pullFav() {
+        if (!syncEnabled()) return Promise.resolve(null);
+        return fetch(API, { credentials: 'include' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) { return (d && Array.isArray(d.favorites)) ? d.favorites : null; })
+            .catch(function () { return null; });
+    }
+    function mergeFav(a, b) {
+        const map = new Map();
+        [].concat(a || [], b || []).forEach(function (it) {
+            if (!it) return;
+            const k = favKey(it);
+            const prev = map.get(k);
+            if (!prev || (it.timestamp || 0) >= (prev.timestamp || 0)) map.set(k, it);
+        });
+        return Array.from(map.values()).sort(function (x, y) { return (y.timestamp || 0) - (x.timestamp || 0); }).slice(0, MAX);
+    }
+    function syncFavorites() {
+        if (!syncEnabled()) return Promise.resolve(false);
+        return pullFav().then(function (remote) {
+            if (remote == null) return false;
+            const merged = mergeFav(remote, getFavorites());
+            try { localStorage.setItem(KEY, JSON.stringify(merged.slice(0, MAX))); } catch (e) {}
+            pushFav(true);
+            loadFavorites();
+            return true;
+        });
     }
 
     // 唯一键：源 + vod_id（回退到标题）
@@ -154,6 +202,10 @@
             _toast(on ? _favT('toast.favAdded') : _favT('toast.favRemoved'), on ? 'success' : 'info');
         };
     }
+
+    // 登录/登出后同步该账号收藏；切后台/刷新时冲刷一次
+    document.addEventListener('lt-auth-changed', function () { syncFavorites(); });
+    global.addEventListener('pagehide', function () { pushFav(true); });
 
     // 暴露到全局（onclick 与其它脚本调用）
     global.toggleFavorites = toggleFavorites;

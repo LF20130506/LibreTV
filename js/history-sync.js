@@ -9,8 +9,14 @@
     const API = '/api/history';
     const PUSH_DEBOUNCE = 1500;
 
+    // 登录态优先用账号 userId；否则用设置里自填的 ltUsername（向后兼容）
     function getUsername() {
-        try { return (localStorage.getItem(USER_KEY) || '').trim(); } catch (e) { return ''; }
+        try {
+            if (global.Account && global.Account.isLoggedIn && global.Account.isLoggedIn()) {
+                return global.Account.currentUser() || '';
+            }
+            return (localStorage.getItem(USER_KEY) || '').trim();
+        } catch (e) { return ''; }
     }
     function setUsername(name) {
         name = (name || '').trim();
@@ -62,6 +68,7 @@
         return fetch(qs(user), {
             method: 'POST',
             headers: authHeaders(),
+            credentials: 'include',
             body: JSON.stringify({ history: readLocal() }),
             keepalive: true,
         }).catch(function () {});
@@ -80,7 +87,7 @@
     // 从服务端拉取历史数组；失败/不可用返回 null
     function pull() {
         if (!enabled()) return Promise.resolve(null);
-        return fetch(qs(getUsername()), { headers: authHeaders() })
+        return fetch(qs(getUsername()), { headers: authHeaders(), credentials: 'include' })
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (d) { return (d && Array.isArray(d.history)) ? d.history : null; })
             .catch(function () { return null; });
@@ -130,9 +137,11 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         const input = document.getElementById('usernameInput');
-        if (input) input.value = getUsername();
+        if (input && !(global.Account && global.Account.isLoggedIn && global.Account.isLoggedIn())) input.value = getUsername();
         syncNow();
     });
+    // 登录/登出后立即同步该账号的云端历史
+    document.addEventListener('lt-auth-changed', function () { syncNow(); });
 
     global.HistorySync = {
         getUsername: getUsername, setUsername: setUsername, enabled: enabled,

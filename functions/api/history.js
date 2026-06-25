@@ -8,6 +8,8 @@
 // KV 绑定：优先 env.LIBRETV_KV；未绑定时回退到代理缓存已用的 env.LIBRETV_PROXY_KV。
 //          在 Cloudflare Pages 设置或 wrangler 里把其中一个名字绑定到一个 KV 命名空间即可。
 
+import { resolveIdentity } from './_auth.js';
+
 const MAX_ITEMS = 100; // 服务端再保险地截断，避免单 key 过大
 
 function corsHeaders() {
@@ -65,13 +67,9 @@ export async function onRequest(context) {
         return json({ error: 'KV 未绑定：请在 Cloudflare 绑定 LIBRETV_KV 或 LIBRETV_PROXY_KV' }, 500);
     }
 
-    if (!(await checkAuth(request, env))) {
-        return json({ error: 'unauthorized' }, 401);
-    }
-
-    const url = new URL(request.url);
-    const user = normalizeUser(url.searchParams.get('user'));
-    if (!user) return json({ error: 'invalid user' }, 400);
+    // 身份：优先登录会话；否则回退旧的 ?user= + X-Auth-Hash（站点密码模式）
+    const user = await resolveIdentity(request, env);
+    if (!user) return json({ error: 'unauthorized' }, 401);
     const key = 'history:' + user;
 
     try {

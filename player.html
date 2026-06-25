@@ -159,7 +159,14 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                         </svg>
                     </button>
-                    
+
+                    <!-- 收藏按钮 -->
+                    <button id="favoriteToggle" onclick="toggleFavoriteCurrent()" title="收藏" data-i18n-title="fav.save" class="px-2 py-1 bg-[#222] hover:bg-[#333] border border-[#333] text-white rounded-lg transition flex-shrink-0">
+                        <svg id="favoriteIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                    </button>
+
                     <!-- 字幕按钮：加载本地字幕文件 / 选择内嵌字幕轨 -->
                     <div class="relative flex-shrink-0" id="subtitleControl">
                         <button id="subtitleToggle" onclick="toggleSubtitleMenu(event)" title="字幕" data-i18n-title="player.subtitle"
@@ -272,6 +279,7 @@
     <script src="js/password.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/history-sync.js"></script>
+    <script src="js/favorites.js"></script>
     <script src="js/api.js"></script>
     <script src="js/search.js"></script>
     <script src="js/anime4k.js"></script>

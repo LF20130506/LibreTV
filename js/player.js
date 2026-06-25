@@ -1720,6 +1720,41 @@ function buildSubtitleMenu() {
     }
 }
 
+// ===== 收藏当前影片 =====
+function _favItemFromUrl() {
+    const p = new URLSearchParams(window.location.search);
+    return {
+        title: currentVideoTitle || p.get('title') || '未知视频',
+        sourceCode: p.get('source') || p.get('source_code') || '',
+        vod_id: p.get('id') || '',
+        sourceName: p.get('source_name') || '',
+        episodes: currentEpisodes,
+    };
+}
+function _updateFavoriteButton(on) {
+    const icon = document.getElementById('favoriteIcon');
+    if (icon) {
+        icon.setAttribute('fill', on ? '#ef4444' : 'none');
+        icon.style.stroke = on ? '#ef4444' : 'currentColor';
+    }
+}
+function refreshFavoriteButton() {
+    if (!window.Favorites) return;
+    try { _updateFavoriteButton(window.Favorites.isFavorited(_favItemFromUrl())); } catch (e) {}
+}
+function toggleFavoriteCurrent() {
+    if (!window.Favorites) return;
+    const on = window.Favorites.toggleFavorite(_favItemFromUrl());
+    _updateFavoriteButton(on);
+    if (typeof showToast === 'function') {
+        const msg = on
+            ? (typeof t === 'function' ? t('toast.favAdded') : '已收藏')
+            : (typeof t === 'function' ? t('toast.favRemoved') : '已取消收藏');
+        showToast(msg, on ? 'success' : 'info');
+    }
+}
+document.addEventListener('DOMContentLoaded', function () { setTimeout(refreshFavoriteButton, 300); });
+
 // 支持在iframe中关闭播放器
 function closeEmbeddedPlayer() {
     try {

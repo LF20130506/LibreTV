@@ -31,6 +31,16 @@
             'history.panelAria': '观看历史',
             'history.empty': '暂无观看记录',
             'history.clear': '清空历史记录',
+            'nav.favorites': '我的收藏',
+            'fav.title': '我的收藏',
+            'fav.empty': '暂无收藏',
+            'fav.clear': '清空收藏',
+            'fav.save': '收藏',
+            'fav.saved': '已收藏',
+            'fav.remove': '取消收藏',
+            'fav.openFail': '无法打开该收藏',
+            'fav.episodes1': '共 ',
+            'fav.episodes2': ' 集',
 
             // 设置面板
             'settings.title': '设置',
@@ -165,6 +175,9 @@
             'toast.proxySaved': '已保存代理地址，刷新后生效',
             'toast.proxyReset': '已恢复默认代理（同源 /proxy/），刷新后生效',
             'toast.proxyInvalid': '代理地址需以 http:// 或 https:// 开头',
+            'toast.favAdded': '已收藏',
+            'toast.favRemoved': '已取消收藏',
+            'toast.favCleared': '收藏已清空',
         },
         en: {
             'title.index': 'LibreTV - Free Online Video Search & Streaming',
@@ -182,6 +195,16 @@
             'history.panelAria': 'Watch History',
             'history.empty': 'No watch history yet',
             'history.clear': 'Clear History',
+            'nav.favorites': 'Favorites',
+            'fav.title': 'My Favorites',
+            'fav.empty': 'No favorites yet',
+            'fav.clear': 'Clear Favorites',
+            'fav.save': 'Favorite',
+            'fav.saved': 'Favorited',
+            'fav.remove': 'Remove',
+            'fav.openFail': "Can't open this favorite",
+            'fav.episodes1': '',
+            'fav.episodes2': ' eps',
 
             'settings.title': 'Settings',
             'settings.panelAria': 'Settings panel',
@@ -306,6 +329,9 @@
             'toast.proxySaved': 'Proxy URL saved; reload to take effect',
             'toast.proxyReset': 'Reverted to the default proxy (same-origin /proxy/); reload to take effect',
             'toast.proxyInvalid': 'Proxy URL must start with http:// or https://',
+            'toast.favAdded': 'Added to favorites',
+            'toast.favRemoved': 'Removed from favorites',
+            'toast.favCleared': 'Favorites cleared',
         },
     };
 

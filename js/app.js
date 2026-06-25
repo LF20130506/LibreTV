@@ -1007,9 +1007,17 @@ async function showDetails(id, vod_name, sourceCode) {
                         </button>
                         <span class="text-gray-400 text-sm">共 ${data.episodes.length} 集</span>
                     </div>
-                    <button onclick="copyLinks()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors">
-                        复制链接
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="modalFavBtn" class="px-3 py-1.5 bg-[#333] hover:bg-[#444] border border-[#444] rounded text-sm transition-colors flex items-center gap-1">
+                            <svg id="modalFavIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                            </svg>
+                            <span id="modalFavText">收藏</span>
+                        </button>
+                        <button onclick="copyLinks()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors">
+                            复制链接
+                        </button>
+                    </div>
                 </div>
                 <div id="episodesGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                     ${renderEpisodes(vod_name, sourceCode, id)}
@@ -1025,6 +1033,20 @@ async function showDetails(id, vod_name, sourceCode) {
         }
 
         modal.classList.remove('hidden');
+
+        // 绑定「收藏」按钮（按当前影片初始化状态并接管点击）
+        if (window.Favorites && data.episodes && data.episodes.length > 0) {
+            window.Favorites.bindButton('modalFavBtn', 'modalFavIcon', 'modalFavText', {
+                title: vod_name,
+                sourceCode: sourceCode,
+                vod_id: id,
+                sourceName: (data.videoInfo && data.videoInfo.source_name) || '',
+                poster: (data.videoInfo && data.videoInfo.vod_pic) || '',
+                year: (data.videoInfo && data.videoInfo.year) || '',
+                type: (data.videoInfo && data.videoInfo.type) || '',
+                episodes: data.episodes,
+            });
+        }
 
         // 异步渲染「可观看平台」(TMDB/JustWatch)，失败不影响详情展示
         if (window.WatchProviders && data.episodes && data.episodes.length > 0) {

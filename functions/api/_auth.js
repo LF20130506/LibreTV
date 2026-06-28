@@ -108,8 +108,22 @@ function normalizeUser(u) {
     u = (u || '').trim().toLowerCase();
     return /^[a-z0-9_.-]{1,64}$/.test(u) ? u : null;
 }
+// 取 KV 命名空间：优先约定名；否则自动探测任意一个 KV 绑定（无论用户绑成什么变量名）。
+// KV 命名空间有 get/put/getWithMetadata；R2 桶没有 getWithMetadata，据此区分、避免误选 R2。
 function getKV(env) {
-    return (env && (env.LIBRETV_KV || env.LIBRETV_PROXY_KV)) || null;
+    if (!env) return null;
+    if (env.LIBRETV_KV) return env.LIBRETV_KV;
+    if (env.LIBRETV_PROXY_KV) return env.LIBRETV_PROXY_KV;
+    for (const k in env) {
+        const v = env[k];
+        if (v && typeof v === 'object'
+            && typeof v.get === 'function'
+            && typeof v.put === 'function'
+            && typeof v.getWithMetadata === 'function') {
+            return v;
+        }
+    }
+    return null;
 }
 // 统一身份解析：优先会话（登录用户）；否则回退到旧的 ?user= + X-Auth-Hash（站点密码模式，向后兼容）。
 // 返回 userId 字符串或 null。

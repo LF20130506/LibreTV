@@ -1,27 +1,25 @@
 # LibreTV - 免费在线视频搜索与观看平台
 
-<div align="center">
-  <img src="image/logo.png" alt="LibreTV Logo" width="120">
-  <br>
-  <p><strong>自由观影，畅享精彩</strong></p>
-</div>
+**我的主要贡献**（基于 [bestK/tv](https://github.com/bestK/tv) fork 后进行 **637+ 次迭代**）：
+
+- 实现了**多源智能聚合 + 去重逻辑**，显著提升内容丰富度和播放稳定性
+- 新增**英文版本**，支持全球用户访问（Cloudflare 数据显示 EU、北美、TW 等地区流量）
+- 优化了 **Cloudflare Pages + KV 存储** 部署方案，实现全球 CDN 加速和低成本运行
+- 增强了**移动端适配**和整体性能
+- 强化了**密码保护机制**和安全配置
+
+**在线演示**： [lyj111.dpdns.org](https://lyj111.dpdns.org)
+
+---
 
 ## 📺 项目简介
+LibreTV 是一个轻量级、免费的在线视频搜索与观看平台，提供来自多个视频源的内容搜索与播放服务。无需注册，即开即用，支持多种设备访问。
 
-LibreTV 是一个轻量级、免费的在线视频搜索与观看平台，提供来自多个视频源的内容搜索与播放服务。无需注册，即开即用，支持多种设备访问。项目结合了前端技术和后端代理功能，可部署在支持服务端功能的各类网站托管服务上。**项目门户**： [libretv.is-an.org](https://libretv.is-an.org)
-
+**技术亮点**：
+- 前端：HTML5 + Tailwind CSS + DPlayer
+- 后端：Cloudflare Workers + KV 存储
+- 全球部署 + 多语言支持
 本项目基于 [bestK/tv](https://github.com/bestK/tv) 进行重构与增强。
-
-<details>
-  <summary>点击查看项目截图</summary>
-  <img src="https://github.com/user-attachments/assets/df485345-e83b-4564-adf7-0680be92d3c7" alt="项目截图" style="max-width:600px">
-</details>
-
-## 🥇 感谢赞助
-
-- **[YXVM](https://yxvm.com)**  
-- **[ZMTO/VTEXS](https://zmto.com)**
-
 ## 🚀 快速部署
 
 选择以下任一平台，点击一键部署按钮，即可快速创建自己的 LibreTV 实例：
@@ -213,7 +211,7 @@ LibreTV 仅作为视频搜索工具，不存储、上传或分发任何视频内
 
 ## 🎉 贡献者福利
 
-活跃贡献者可以在 [Issue #268](https://github.com/LibreSpark/LibreTV/issues/268) 中留言，申请免费上车 1Password Team，享受团队协作工具的便利！
+活跃贡献者可以在 [Issue #268](https://github.com/LF20130506/LibreTV) 中留言，申请免费上车 1Password Team，享受团队协作工具的便利！
 
 ## 💝 支持项目
 

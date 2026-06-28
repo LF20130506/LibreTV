@@ -9,6 +9,10 @@
   </p>
 </div>
 
+> **我的主要贡献**（基于 [bestK/tv](https://github.com/bestK/tv) fork 后进行 **637+ 次迭代**）：多源智能聚合 + 去重逻辑、新增**英文版本**（EU / 北美 / TW 等地区均有流量）、**Cloudflare Pages + KV** 部署方案（全球 CDN、低成本）、移动端适配与性能优化、密码保护与安全配置强化，以及本轮的多用户私有云与媒体库。
+>
+> **在线演示**： [lyj111.dpdns.org](https://lyj111.dpdns.org)
+
 ---
 
 ## 📖 目录
@@ -38,7 +42,7 @@
 
 ## 📺 项目简介
 
-LibreTV 是一个轻量级、自托管的在线影视搜索与观看平台：聚合来自多个公开采集源（苹果 CMS V10 API）的内容，前端纯静态 + 服务端代理，可部署在 Cloudflare Pages / Vercel / Netlify / Render / Docker 等多种环境。
+LibreTV 是一个轻量级、自托管的在线影视搜索与观看平台：聚合来自多个公开采集源（苹果 CMS V10 API）的内容，前端纯静态 + 服务端代理，可部署在 Cloudflare Pages / Vercel / Netlify / Render / Docker 等多种环境。无需注册即可使用，支持多设备访问。
 
 本仓库在原版基础上做了大量增强，并可选地升级为一个 **Cloudflare 托管的多用户「私有云」**——多人各自登录，观看历史 / 收藏 / 设置按账号云端同步，甚至把自己的视频上传到对象存储在站内串流。
 

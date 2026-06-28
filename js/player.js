@@ -90,6 +90,16 @@ let userClickedPosition = null; // 记录用户点击的位置
 let subtitleTracks = [];        // 当前 m3u8 流中检测到的内嵌字幕轨
 let currentSubtitleIndex = -1;  // 当前启用的字幕轨索引，-1 表示关闭
 let subtitleDetectToasted = false; // 本集是否已弹过"检测到字幕"提示
+
+// 判断播放源类型：.m3u8 走 HLS（customType.m3u8）；直链 mp4/webm/mov 等及 R2 媒体库
+// （/api/media/<id> 无扩展名）走 ArtPlayer 原生 <video> 播放。
+function detectVideoType(url) {
+    const u = (url || '').split('?')[0].toLowerCase();
+    if (u.endsWith('.m3u8')) return 'm3u8';
+    if (/\.(mp4|m4v|webm|mov|mkv)$/.test(u)) return 'mp4';
+    if (u.indexOf('/api/media/') !== -1) return 'mp4';
+    return 'm3u8';
+}
 let shortcutHintTimeout = null; // 用于控制快捷键提示显示时间
 let adFilteringEnabled = true; // 默认开启广告过滤
 let progressSaveInterval = null; // 定期保存进度的计时器
@@ -449,7 +459,7 @@ function initPlayer(videoUrl) {
     art = new Artplayer({
         container: '#player',
         url: videoUrl,
-        type: 'm3u8',
+        type: detectVideoType(videoUrl),
         title: videoTitle,
         volume: 0.8,
         isLive: false,

@@ -72,6 +72,11 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
             </svg>
         </button>
+        <button onclick="toggleMediaLibrary(event)" class="bg-[#222] hover:bg-[#333] border border-[#333] hover:border-white rounded-xl px-4 py-2 transition-colors" aria-label="我的媒体库" data-i18n-aria-label="nav.media">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2zM22 8.5l-4 3 4 3v-6zM9 9l3 2.5L9 14V9z"></path>
+            </svg>
+        </button>
         <button id="themeToggleBtn" onclick="toggleTheme()" class="bg-[#222] hover:bg-[#333] border border-[#333] hover:border-white rounded-xl px-4 py-2 transition-colors" aria-label="切换主题" data-i18n-aria-label="nav.theme" title="切换主题">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
@@ -142,6 +147,28 @@
                 清空收藏
             </button>
         </div>
+    </div>
+
+    <!-- 媒体库面板（上传到 R2、播放、删除；需登录 + R2 配置） -->
+    <div id="mediaPanel" class="history-panel fixed left-0 top-0 h-full bg-[#111] border-r border-[#333] p-6 z-40 transform -translate-x-full transition-transform duration-300 overflow-y-auto" aria-label="我的媒体库" data-i18n-aria-label="nav.media" aria-hidden="true">
+        <div class="flex justify-between items-center mb-6">
+            <button onclick="toggleMediaLibrary()" class="close-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <h3 class="text-xl font-bold gradient-text mx-auto" data-i18n="media.title">我的媒体库</h3>
+            <div class="w-4"></div>
+        </div>
+        <div class="mb-3">
+            <button onclick="pickMediaFile()" class="px-4 py-2 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg" data-i18n="media.upload">上传视频</button>
+            <input type="file" id="mediaFileInput" accept="video/*,.mp4,.webm,.mov,.mkv" class="hidden" onchange="onMediaFileChosen(this)">
+            <div id="mediaUploadProgress" class="hidden mt-2">
+                <div class="w-full bg-[#222] rounded h-2 overflow-hidden"><div id="mediaUploadBar" class="bg-cyan-500 h-2 transition-all" style="width:0%"></div></div>
+                <div id="mediaUploadLabel" class="text-xs text-gray-400 mt-1 text-center"></div>
+            </div>
+        </div>
+        <div id="mediaList" class="pb-4"></div>
     </div>
 
     <!-- 设置面板 -->
@@ -562,6 +589,7 @@
     <script src="js/search.js"></script>
     <script src="js/app.js"></script>
     <script src="js/favorites.js"></script>
+    <script src="js/media-library.js"></script>
 
     <!-- PWA 注册 -->
     <script src="js/pwa-register.js"></script>
